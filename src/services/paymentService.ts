@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, serverTimestamp, collectionGroup, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, serverTimestamp, collectionGroup, doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Payment, PaymentFormData } from '../types/payment';
 import { orderService } from './orderService';

@@ -30,6 +30,9 @@ import ViewOrder from './pages/admin/orders/ViewOrder';
 import PaymentsList from './pages/admin/payments/PaymentsList';
 import OrderPayments from './pages/admin/payments/OrderPayments';
 
+// Reports
+import ReportsModule from './pages/admin/reports/ReportsModule';
+
 function App() {
   return (
     <AuthProvider>
@@ -53,6 +56,8 @@ function App() {
               <Route path="orders/:orderId/payments" element={<OrderPayments />} />
 
               <Route path="payments" element={<PaymentsList />} />
+              
+              <Route path="reports" element={<ReportsModule />} />
             </Route>
           </Route>
           

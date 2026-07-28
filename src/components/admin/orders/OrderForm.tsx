@@ -85,7 +85,7 @@ export default function OrderForm({ initialData, onSubmit, isLoading }: OrderFor
     setFormData(prev => ({
       ...prev,
       customerId,
-      customerName: selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : '',
+      customerName: selectedCustomer ? selectedCustomer.customerName : '',
       mobileNumber: selectedCustomer ? selectedCustomer.mobileNumber : '',
       measurementId: '', // Reset measurement when customer changes
       measurementType: '',
@@ -142,7 +142,7 @@ export default function OrderForm({ initialData, onSubmit, isLoading }: OrderFor
             <option value="">Select a Customer</option>
             {customers.map(customer => (
               <option key={customer.id} value={customer.id}>
-                {customer.firstName} {customer.lastName} ({customer.mobileNumber})
+                {customer.customerName} ({customer.mobileNumber})
               </option>
             ))}
           </select>
@@ -170,7 +170,7 @@ export default function OrderForm({ initialData, onSubmit, isLoading }: OrderFor
             </option>
             {measurements.map(m => (
               <option key={m.id} value={m.id}>
-                {m.measurementType} - {new Date(m.createdAt?.toDate ? m.createdAt.toDate() : Date.now()).toLocaleDateString()}
+                {m.measurementType} - {new Date((m.createdAt as any)?.toDate ? (m.createdAt as any).toDate() : Date.now()).toLocaleDateString()}
               </option>
             ))}
           </select>

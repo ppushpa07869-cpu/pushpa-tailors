@@ -1,91 +1,50 @@
-# Phase 6 – Billing & Payment Management
+# Phase 6.5: Payment Experience & UI Redesign
 
-This plan details the implementation of the Billing & Payment Management module, as requested.
+This plan outlines the complete UX redesign for the Order Details view and Payment Collection flow, aiming to achieve an ultra-fast, premium experience.
+
+## User Review Required
+
+> [!IMPORTANT]
+> - I will completely redesign `ViewOrder.tsx` removing the previous layout and integrating the 3 large premium metric cards.
+> - A new inline `ReceivePaymentModal` and a sliding `PaymentHistoryDrawer` will be added directly into `ViewOrder.tsx` to prevent unnecessary navigation.
+> - The standalone "Payments" page and sidebar link will be removed. Does this mean you also want `src/pages/admin/payments/PaymentsList.tsx` deleted, or just hidden from the sidebar? I will just hide it from the sidebar for now to preserve the code if needed.
+> - Ensure you are satisfied with removing edit/delete from the Payment History.
 
 ## Proposed Changes
 
-### Types
+### 1. Sidebar Updates
+- **File**: `src/components/admin/Sidebar.tsx`
+- **Changes**: Remove `Payments` link. Add a placeholder `Settings` link. The final sidebar list: Dashboard, Customers, Orders, Reports, Settings.
 
-#### [NEW] `src/types/payment.ts`
-Define interfaces for `Payment` and `PaymentFormData`.
-Fields: `id`, `paymentId`, `receiptNumber`, `orderId`, `customerId`, `customerName`, `paymentDate`, `paymentMethod`, `amountPaid`, `paymentType`, `remarks`, `createdAt`, `updatedAt`.
-Enums:
-- PaymentMethod: Cash (నగదు), UPI (యూపీఐ), PhonePe, Google Pay, Paytm, Bank Transfer, Other
-- PaymentType: Advance, Partial Payment, Final Payment, Refund
+### 2. Status Badge Utilities
+- **File**: `src/utils/orderUtils.ts`
+- **Changes**: Update `getStatusColor` mapping to match precisely:
+  - New (Blue), Cutting (Yellow), Stitching (Orange), Ready (Purple), Delivered (Green), Cancelled (Red).
 
-#### [MODIFY] `src/types/order.ts`
-Add `paymentStatus` to the `Order` interface with values: `Unpaid`, `Partially Paid`, `Fully Paid`.
-Update `OrderStatus` if necessary (but it seems we just need a new `paymentStatus` field).
+### 3. Order Details UI Redesign
+- **File**: `src/pages/admin/orders/ViewOrder.tsx`
+- **Changes**:
+  - Replace the entire existing layout with a Premium Boutique design.
+  - **Top Section**: Customer Name, Mobile, Order ID, Status, Delivery Date, decorated with glassmorphism and soft shadows.
+  - **Middle Section**: 3 distinct, large metric cards for Total Amount (Neutral), Paid Amount (Green), Remaining Amount (Orange).
+  - **Payment Progress Bar**: A sleek horizontal progress bar visualizing Paid vs Total amount percentage.
+  - **Primary Actions**: Large prominent action buttons: `💰 Receive Payment`, `✔ Mark Delivered`, `✏ Edit Order`.
 
-### Services
-
-#### [NEW] `src/services/paymentService.ts`
-Implement Firestore CRUD operations for the `orders/{orderId}/payments` subcollection.
-- `addPayment`: 
-  1. Generate `receiptNumber` (`RCPT-YYYY-XXXX`).
-  2. Add the payment document.
-  3. Fetch the parent order, update its `remainingAmount`.
-  4. Automatically update the order's `paymentStatus` based on the new remaining amount.
-- `updatePayment` (Edit Payment):
-  1. Fetch old payment.
-  2. Adjust order `remainingAmount` and `paymentStatus` by reverting old payment amount and applying the new one.
-  3. Update the payment document.
-- `deletePayment`:
-  1. Restore the `amountPaid` to the order's `remainingAmount` and recalculate `paymentStatus`.
-  2. Delete payment document.
-- `getPaymentsByOrder`: Fetch all payments for a specific order.
-- `getAllPayments`: Fetch all payments across all orders using a Firestore Collection Group query on `payments`.
-- `getDashboardStats`: Aggregate Today's Collection, Monthly Collection, Pending Collection (from orders), Fully Paid Orders (from orders).
-
-### Components
-
-#### [NEW] `src/components/admin/payments/PaymentForm.tsx`
-Form for adding/editing payments.
-- Amount validation: `> 0` and `<= remainingAmount`.
-- Date picker for `paymentDate`.
-
-#### [NEW] `src/components/admin/payments/PaymentTable.tsx` & `PaymentCard.tsx`
-Responsive views for payment history.
-
-#### [NEW] `src/components/admin/payments/PaymentFilters.tsx`
-Filters for Today, This Month, Payment Method, Payment Status.
-
-#### [NEW] `src/components/admin/payments/PaymentHistoryDialog.tsx` & `DeletePaymentDialog.tsx`
-Modals for viewing history and deleting entries.
-
-### Pages
-
-#### [NEW] `src/pages/admin/payments/PaymentsList.tsx`
-`/admin/payments` - Global view of all payments across all orders.
-
-#### [NEW] `src/pages/admin/payments/OrderPayments.tsx`
-`/admin/orders/:orderId/payments` - View and manage payments for a specific order.
-
-#### [MODIFY] `src/pages/admin/orders/ViewOrder.tsx`
-Add Payment Status badge.
-Add a button/link to "Manage Payments".
-
-### Route & Navigation Updates
-
-#### [MODIFY] `src/App.tsx`
-Add routes:
-- `/admin/payments` -> `PaymentsList`
-- `/admin/orders/:orderId/payments` -> `OrderPayments`
-
-#### [MODIFY] `src/components/admin/Sidebar.tsx`
-Add "Payments" link to the sidebar (using `CreditCard` or `IndianRupee` icon).
-
-#### [MODIFY] `src/pages/admin/Dashboard.tsx`
-Replace existing dummy payment stats with live data from `paymentService`.
-Cards: Today's Collection, Monthly Collection, Pending Collection, Fully Paid Orders.
+### 4. Receive Payment Modal & History Drawer
+- **File**: `src/pages/admin/orders/ViewOrder.tsx`
+- **Changes**:
+  - Embed a sleek, glass-effect modal for taking payments.
+  - **Fields**: Amount, Payment Method (Cash, UPI, PhonePe, Google Pay, Paytm, Bank Transfer, Other), Remarks.
+  - Submitting will invoke `paymentService.addPayment()`, which inherently updates the order totals and payment status, followed by a beautiful success toast.
+  - Add a "View Payment History" button that opens a side drawer/dialog showing the immutable payment timeline (newest first).
 
 ## Verification Plan
 
 ### Automated Tests
-1. `npm run build` will be executed to guarantee 0 TypeScript errors.
-2. `npm run dev` will be executed to verify localhost runs successfully.
+- Run `npm run build` and `npx tsc --noEmit` to ensure perfect compilation and zero TypeScript errors.
 
 ### Manual Verification
-1.  **Add Payment**: Ensure amount validation works. Ensure `remainingAmount` decreases and `paymentStatus` updates on the Order.
-2.  **Edit Payment**: Ensure adjusting amount recalibrates the order's `remainingAmount`.
-3.  **Dashboard**: Verify collections show the correct sums.
+- Verify the Sidebar navigation.
+- Load an order and confirm the new boutique layout, progress bar, and the large metrics cards look impeccable.
+- Submit a new payment and watch the total update instantly on the page.
+- Open the Payment History Drawer to ensure the timeline matches the history correctly.
