@@ -26,6 +26,10 @@ import AddOrder from './pages/admin/orders/AddOrder';
 import EditOrder from './pages/admin/orders/EditOrder';
 import ViewOrder from './pages/admin/orders/ViewOrder';
 
+// Payments
+import PaymentsList from './pages/admin/payments/PaymentsList';
+import OrderPayments from './pages/admin/payments/OrderPayments';
+
 function App() {
   return (
     <AuthProvider>
@@ -46,6 +50,9 @@ function App() {
               <Route path="orders/add" element={<AddOrder />} />
               <Route path="orders/edit/:orderId" element={<EditOrder />} />
               <Route path="orders/view/:orderId" element={<ViewOrder />} />
+              <Route path="orders/:orderId/payments" element={<OrderPayments />} />
+
+              <Route path="payments" element={<PaymentsList />} />
             </Route>
           </Route>
           

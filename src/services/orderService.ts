@@ -43,7 +43,9 @@ export const orderService = {
     const newOrder = {
       ...data,
       orderId,
+      paidAmount: data.advanceAmount,
       remainingAmount: data.totalAmount - data.advanceAmount,
+      paymentStatus: (data.totalAmount - data.advanceAmount === 0) ? 'Fully Paid' : (data.advanceAmount === 0 ? 'Unpaid' : 'Partially Paid'),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -61,13 +63,19 @@ export const orderService = {
     };
 
     if (data.totalAmount !== undefined && data.advanceAmount !== undefined) {
-      updateData.remainingAmount = data.totalAmount - data.advanceAmount;
+      const remaining = data.totalAmount - data.advanceAmount;
+      updateData.remainingAmount = remaining;
+      updateData.paidAmount = data.advanceAmount;
+      updateData.paymentStatus = remaining === 0 ? 'Fully Paid' : (data.advanceAmount === 0 ? 'Unpaid' : 'Partially Paid');
     } else if (data.totalAmount !== undefined || data.advanceAmount !== undefined) {
        const currentOrder = await this.getOrder(id);
        if (currentOrder) {
          const t = data.totalAmount ?? currentOrder.totalAmount;
          const a = data.advanceAmount ?? currentOrder.advanceAmount;
-         updateData.remainingAmount = t - a;
+         const remaining = t - a;
+         updateData.remainingAmount = remaining;
+         updateData.paidAmount = a;
+         updateData.paymentStatus = remaining === 0 ? 'Fully Paid' : (a === 0 ? 'Unpaid' : 'Partially Paid');
        }
     }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit, Calendar, Phone, IndianRupee, Scissors } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, Phone, IndianRupee, Scissors, CreditCard } from 'lucide-react';
 import { orderService } from '../../../services/orderService';
 import type { Order } from '../../../types/order';
 import { getStatusColor } from '../../../utils/orderUtils';
@@ -60,21 +60,38 @@ export default function ViewOrder() {
             <p className="text-gray-500 mt-1 font-medium">Order details and status.</p>
           </div>
         </div>
-        <button
-          onClick={() => navigate(`/admin/orders/edit/${order.id}`)}
-          className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-sm hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          <Edit className="h-4 w-4" />
-          <span>Edit Order</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate(`/admin/orders/${order.id}/payments`)}
+            className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded-sm hover:bg-blue-100 transition-colors shadow-sm"
+          >
+            <CreditCard className="h-4 w-4" />
+            <span>Payments</span>
+          </button>
+          <button
+            onClick={() => navigate(`/admin/orders/edit/${order.id}`)}
+            className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-sm hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Edit className="h-4 w-4" />
+            <span>Edit Order</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white shadow-sm border border-gray-100 rounded-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
           <h3 className="text-lg font-serif text-gray-900">Order Summary</h3>
-          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-            {order.status}
-          </span>
+          <div className="flex gap-2">
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+              {order.status}
+            </span>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+              order.paymentStatus === 'Fully Paid' ? 'bg-green-100 text-green-800' : 
+              order.paymentStatus === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+            }`}>
+              {order.paymentStatus}
+            </span>
+          </div>
         </div>
         
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -129,8 +146,8 @@ export default function ViewOrder() {
                   <span className="font-medium text-gray-900">₹ {order.totalAmount}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500 text-sm">Advance Amount:</span>
-                  <span className="font-medium text-green-600">₹ {order.advanceAmount}</span>
+                  <span className="text-gray-500 text-sm">Paid Amount:</span>
+                  <span className="font-medium text-green-600">₹ {order.paidAmount}</span>
                 </div>
                 <div className="pt-2 border-t border-gray-200 flex justify-between">
                   <span className="text-gray-700 font-medium">Remaining Amount:</span>

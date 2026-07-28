@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Scissors, Users, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, LogOut, Scissors, Users, ShoppingBag, CreditCard } from 'lucide-react';
 import { auth } from '../../services/firebase';
 import { signOut } from 'firebase/auth';
 
@@ -49,6 +49,13 @@ export default function Sidebar() {
           >
             <ShoppingBag className="h-5 w-5" />
             <span className="font-medium tracking-wide">Orders</span>
+          </NavLink>
+          <NavLink 
+            to="/admin/payments" 
+            className={({ isActive }) => `flex items-center gap-3 px-4 py-3 rounded-sm transition-colors ${isActive ? 'bg-primary text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+          >
+            <CreditCard className="h-5 w-5" />
+            <span className="font-medium tracking-wide">Payments</span>
           </NavLink>
         </nav>
       </div>

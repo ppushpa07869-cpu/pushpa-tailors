@@ -59,7 +59,18 @@ export default function OrderCard({ orders, onView, onEdit, onDelete }: OrderCar
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <IndianRupee className="h-4 w-4 text-gray-400" />
-                <span>Remaining: <span className={`font-medium ${order.remainingAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}>₹ {order.remainingAmount}</span></span>
+                <span className="flex-1 flex justify-between">
+                  <span>Paid: ₹ {order.paidAmount}</span>
+                  <span className={`font-medium ${order.remainingAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}>Rem: ₹ {order.remainingAmount}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <span className={`px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider ${
+                  order.paymentStatus === 'Fully Paid' ? 'bg-green-100 text-green-800' : 
+                  order.paymentStatus === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {order.paymentStatus}
+                </span>
               </div>
             </div>
 

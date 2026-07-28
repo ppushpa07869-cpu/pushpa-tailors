@@ -33,7 +33,9 @@ export default function OrderTable({ orders, onView, onEdit, onDelete }: OrderTa
               <th className="px-6 py-4 font-medium tracking-wider">Order ID</th>
               <th className="px-6 py-4 font-medium tracking-wider">Customer</th>
               <th className="px-6 py-4 font-medium tracking-wider">Delivery Date</th>
-              <th className="px-6 py-4 font-medium tracking-wider">Status</th>
+              <th className="px-6 py-4 font-medium tracking-wider">Order Status</th>
+              <th className="px-6 py-4 font-medium tracking-wider">Payment Status</th>
+              <th className="px-6 py-4 font-medium tracking-wider">Paid</th>
               <th className="px-6 py-4 font-medium tracking-wider">Remaining</th>
               <th className="px-6 py-4 font-medium tracking-wider text-right">Actions</th>
             </tr>
@@ -64,6 +66,19 @@ export default function OrderTable({ orders, onView, onEdit, onDelete }: OrderTa
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                       {order.status}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider ${
+                      order.paymentStatus === 'Fully Paid' ? 'bg-green-100 text-green-800' : 
+                      order.paymentStatus === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {order.paymentStatus}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="font-medium text-gray-900">
+                      ₹ {order.paidAmount}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`font-medium ${order.remainingAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}>

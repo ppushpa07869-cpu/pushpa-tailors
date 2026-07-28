@@ -1,21 +1,21 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, Truck, Clock, CheckCircle } from 'lucide-react';
-import { orderService } from '../../services/orderService';
+import { IndianRupee, Wallet, Clock, CheckCircle } from 'lucide-react';
+import { paymentService } from '../../services/paymentService';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
-    totalOrders: 0,
-    todaysDeliveries: 0,
-    pendingOrders: 0,
-    deliveredOrders: 0
+    todaysCollection: 0,
+    monthlyCollection: 0,
+    pendingCollection: 0,
+    fullyPaidOrders: 0
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const orderStats = await orderService.getDashboardStats();
-        setStats(orderStats);
+        const paymentStats = await paymentService.getDashboardStats();
+        setStats(paymentStats);
       } catch (error) {
         console.error("Error fetching dashboard stats", error);
       } finally {
@@ -26,10 +26,10 @@ export default function Dashboard() {
   }, []);
 
   const statCards = [
-    { name: 'Total Orders', value: stats.totalOrders, icon: ShoppingBag, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { name: "Today's Deliveries", value: stats.todaysDeliveries, icon: Truck, color: 'text-orange-600', bg: 'bg-orange-100' },
-    { name: 'Pending Orders', value: stats.pendingOrders, icon: Clock, color: 'text-yellow-600', bg: 'bg-yellow-100' },
-    { name: 'Delivered Orders', value: stats.deliveredOrders, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-100' },
+    { name: "Today's Collection", value: `₹ ${stats.todaysCollection}`, icon: IndianRupee, color: 'text-blue-600', bg: 'bg-blue-100' },
+    { name: 'Monthly Collection', value: `₹ ${stats.monthlyCollection}`, icon: Wallet, color: 'text-green-600', bg: 'bg-green-100' },
+    { name: 'Pending Collection', value: `₹ ${stats.pendingCollection}`, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
+    { name: 'Fully Paid Orders', value: stats.fullyPaidOrders, icon: CheckCircle, color: 'text-purple-600', bg: 'bg-purple-100' },
   ];
 
   return (

@@ -8,6 +8,8 @@ export type OrderStatus =
   | 'Delivered (డెలివరీ అయింది)' 
   | 'Cancelled (రద్దు)';
 
+export type PaymentStatus = 'Unpaid' | 'Partially Paid' | 'Fully Paid';
+
 export interface Order {
   id: string;
   orderId: string;
@@ -19,7 +21,9 @@ export interface Order {
   orderDate: string; // YYYY-MM-DD format
   deliveryDate: string; // YYYY-MM-DD format
   status: OrderStatus;
+  paymentStatus: PaymentStatus;
   advanceAmount: number;
+  paidAmount: number;
   remainingAmount: number;
   totalAmount: number;
   notes: string;
