@@ -20,6 +20,12 @@ import MeasurementsList from './pages/admin/customers/measurements/MeasurementsL
 import AddMeasurement from './pages/admin/customers/measurements/AddMeasurement';
 import EditMeasurement from './pages/admin/customers/measurements/EditMeasurement';
 
+// Orders
+import OrdersList from './pages/admin/orders/OrdersList';
+import AddOrder from './pages/admin/orders/AddOrder';
+import EditOrder from './pages/admin/orders/EditOrder';
+import ViewOrder from './pages/admin/orders/ViewOrder';
+
 function App() {
   return (
     <AuthProvider>
@@ -35,6 +41,11 @@ function App() {
               <Route path="customers/:customerId/measurements" element={<MeasurementsList />} />
               <Route path="customers/:customerId/measurements/add" element={<AddMeasurement />} />
               <Route path="customers/:customerId/measurements/:id/edit" element={<EditMeasurement />} />
+              
+              <Route path="orders" element={<OrdersList />} />
+              <Route path="orders/add" element={<AddOrder />} />
+              <Route path="orders/edit/:orderId" element={<EditOrder />} />
+              <Route path="orders/view/:orderId" element={<ViewOrder />} />
             </Route>
           </Route>
           
