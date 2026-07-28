@@ -1,135 +1,123 @@
 import { orderService } from './orderService';
 import { paymentService } from './paymentService';
-import { customerService } from './customerService';
+import type { Order } from '../types/order';
 
 export interface DashboardData {
   stats: {
-    totalCustomers: number;
-    totalOrders: number;
     todaysCollection: number;
-    monthlyCollection: number;
+    newOrdersCount: number;
+    deliveriesTodayCount: number;
     pendingCollection: number;
-    ordersDueToday: number;
-    overdueOrders: number;
-    fullyPaidOrders: number;
-    ordersInProgress: number; // New, Cutting, Stitching
-    monthlyRevenue: number;
   };
-  charts: {
-    monthlyRevenueData: { month: string; revenue: number }[];
-    ordersByStatusData: { name: string; value: number }[];
-    paymentMethodsData: { name: string; value: number }[];
-    ordersPerMonthData: { month: string; orders: number }[];
+  collectionSummary: {
+    today: number;
+    thisWeek: number;
+    thisMonth: number;
+    pending: number;
   };
+  statusCounts: Record<string, number>;
+  recentOrders: Order[];
+  pendingPayments: Order[];
+  todaysDeliveries: Order[];
 }
 
 export const dashboardService = {
   async getDashboardData(): Promise<DashboardData> {
-    const [orders, payments, customers] = await Promise.all([
+    const [orders, payments] = await Promise.all([
       orderService.getOrders(),
       paymentService.getAllPayments(),
-      customerService.getCustomers(),
     ]);
 
-    const today = new Date().toISOString().split('T')[0];
-    const currentMonth = today.substring(0, 7);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const today = new Date(todayStr);
+    const currentMonth = todayStr.substring(0, 7);
+    
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekAgoStr = weekAgo.toISOString().split('T')[0];
 
-    // Initialize stats
+    // Stats
     let todaysCollection = 0;
+    let thisWeekCollection = 0;
     let monthlyCollection = 0;
     let pendingCollection = 0;
-    let ordersDueToday = 0;
-    let overdueOrders = 0;
-    let fullyPaidOrders = 0;
-    let ordersInProgress = 0;
     
-    // Chart aggregations
-    const monthlyRevMap: Record<string, number> = {};
-    const ordersPerMonthMap: Record<string, number> = {};
-    const statusMap: Record<string, number> = {};
-    const paymentMethodMap: Record<string, number> = {};
+    let newOrdersCount = 0;
+    let deliveriesTodayCount = 0;
+
+    const statusCounts: Record<string, number> = {
+      'New': 0,
+      'Cutting': 0,
+      'Stitching': 0,
+      'Ready': 0,
+      'Delivered': 0,
+      'Cancelled': 0
+    };
 
     payments.forEach(payment => {
       if (payment.paymentType !== 'Refund') {
-        if (payment.paymentDate === today) {
-          todaysCollection += payment.amountPaid;
-        }
-        if (payment.paymentDate.startsWith(currentMonth)) {
-          monthlyCollection += payment.amountPaid;
-        }
-        
-        const monthKey = payment.paymentDate.substring(0, 7);
-        monthlyRevMap[monthKey] = (monthlyRevMap[monthKey] || 0) + payment.amountPaid;
-        
-        const method = payment.paymentMethod.split(' (')[0];
-        paymentMethodMap[method] = (paymentMethodMap[method] || 0) + payment.amountPaid;
+        if (payment.paymentDate === todayStr) todaysCollection += payment.amountPaid;
+        if (payment.paymentDate >= weekAgoStr && payment.paymentDate <= todayStr) thisWeekCollection += payment.amountPaid;
+        if (payment.paymentDate.startsWith(currentMonth)) monthlyCollection += payment.amountPaid;
       } else {
-        // Handle refunds by subtracting
-        const monthKey = payment.paymentDate.substring(0, 7);
-        monthlyRevMap[monthKey] = (monthlyRevMap[monthKey] || 0) - payment.amountPaid;
-        const method = payment.paymentMethod.split(' (')[0];
-        paymentMethodMap[method] = (paymentMethodMap[method] || 0) - payment.amountPaid;
+        if (payment.paymentDate === todayStr) todaysCollection -= payment.amountPaid;
+        if (payment.paymentDate >= weekAgoStr && payment.paymentDate <= todayStr) thisWeekCollection -= payment.amountPaid;
+        if (payment.paymentDate.startsWith(currentMonth)) monthlyCollection -= payment.amountPaid;
       }
     });
 
+    const recentOrders = [...orders].sort((a, b) => b.orderDate.localeCompare(a.orderDate)).slice(0, 10);
+    const pendingPayments: Order[] = [];
+    const todaysDeliveries: Order[] = [];
+
     orders.forEach(order => {
-      if (order.status !== 'Cancelled (రద్దు)') {
+      const isDelivered = order.status === 'Delivered (డెలివరీ అయింది)';
+      const isCancelled = order.status === 'Cancelled (రద్దు)';
+
+      if (!isCancelled) {
         pendingCollection += order.remainingAmount || 0;
         
-        if (order.paymentStatus === 'Fully Paid') {
-          fullyPaidOrders++;
-        }
+        if (order.status.startsWith('New')) newOrdersCount++;
 
-        if (order.deliveryDate === today && order.status !== 'Delivered (డెలివరీ అయింది)') {
-          ordersDueToday++;
-        }
-        
-        if (order.deliveryDate < today && order.status !== 'Delivered (డెలివరీ అయింది)') {
-          overdueOrders++;
-        }
-
-        if (['New (కొత్తది)', 'Cutting (కట్టింగ్)', 'Stitching (కుట్టడం)'].includes(order.status)) {
-          ordersInProgress++;
+        if (!isDelivered) {
+          if (order.deliveryDate <= todayStr) {
+            deliveriesTodayCount++;
+            todaysDeliveries.push(order);
+          }
         }
       }
 
       const statusKey = order.status.split(' (')[0];
-      statusMap[statusKey] = (statusMap[statusKey] || 0) + 1;
+      if (statusCounts[statusKey] !== undefined) {
+        statusCounts[statusKey]++;
+      }
 
-      const monthKey = order.orderDate.substring(0, 7);
-      ordersPerMonthMap[monthKey] = (ordersPerMonthMap[monthKey] || 0) + 1;
+      if (order.remainingAmount > 0 && !isCancelled) {
+        pendingPayments.push(order);
+      }
     });
 
-    // Format chart data (sort by month key ascending)
-    const sortedMonths = Array.from(new Set([...Object.keys(monthlyRevMap), ...Object.keys(ordersPerMonthMap)])).sort();
-    
-    // Take last 6 months for trend charts
-    const last6Months = sortedMonths.slice(-6);
-
-    const formatMonth = (yyyyMM: string) => {
-      const d = new Date(`${yyyyMM}-01`);
-      return d.toLocaleString('default', { month: 'short', year: '2-digit' });
-    };
+    // Sort pending payments by remaining amount (desc) or delivery date
+    pendingPayments.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate));
+    todaysDeliveries.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate));
 
     return {
       stats: {
-        totalCustomers: customers.length,
-        totalOrders: orders.length,
         todaysCollection,
-        monthlyCollection,
-        pendingCollection,
-        ordersDueToday,
-        overdueOrders,
-        fullyPaidOrders,
-        ordersInProgress,
-        monthlyRevenue: monthlyRevMap[currentMonth] || 0
+        newOrdersCount,
+        deliveriesTodayCount,
+        pendingCollection
       },
-      charts: {
-        monthlyRevenueData: last6Months.map(m => ({ month: formatMonth(m), revenue: monthlyRevMap[m] || 0 })),
-        ordersPerMonthData: last6Months.map(m => ({ month: formatMonth(m), orders: ordersPerMonthMap[m] || 0 })),
-        ordersByStatusData: Object.entries(statusMap).map(([name, value]) => ({ name, value })),
-        paymentMethodsData: Object.entries(paymentMethodMap).filter(([_, val]) => val > 0).map(([name, value]) => ({ name, value }))
-      }
+      collectionSummary: {
+        today: todaysCollection,
+        thisWeek: thisWeekCollection,
+        thisMonth: monthlyCollection,
+        pending: pendingCollection
+      },
+      statusCounts,
+      recentOrders,
+      pendingPayments: pendingPayments.slice(0, 10), // Take top 10 for dashboard
+      todaysDeliveries: todaysDeliveries.slice(0, 10)
     };
   }
 };

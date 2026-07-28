@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, Edit, Calendar, Phone, IndianRupee, 
   CheckCircle, History, AlertCircle, Check
@@ -15,6 +15,7 @@ import PaymentHistoryDrawer from '../../../components/admin/orders/PaymentHistor
 export default function ViewOrder() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -62,6 +63,12 @@ export default function ViewOrder() {
     fetchOrder();
     fetchPayments();
   }, [orderId, navigate]);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'pay' && order?.remainingAmount && order.remainingAmount > 0) {
+      setIsPaymentModalOpen(true);
+    }
+  }, [searchParams, order]);
 
   const handleReceivePayment = async (data: PaymentFormData) => {
     if (!order) return;
