@@ -1,38 +1,94 @@
-# Phase 7: Reports Dashboard Redesign Implementation Plan
+# Build Phase 8 – PUSHPA TAILORS Premium Customer Website (Luxury Edition)
 
-This plan details the process of completely overhauling the Dashboard to a premium, boutique-style layout while removing all visual charts in favor of actionable, data-driven lists and summaries.
+This plan details the steps to build a completely separate, premium customer-facing website for PUSHPA TAILORS without modifying the existing Admin Portal or backend logic. The goal is to create a world-class boutique tailoring website with a luxury aesthetic.
 
 ## User Review Required
 
+Please review this implementation plan to ensure it aligns with your vision. Note that we will be completely rewriting the existing customer-facing pages (Home, About, Services, Contact) to achieve the luxury design standard. The Admin pages will remain untouched. 
+
 > [!IMPORTANT]
-> - All `recharts` graphs (Monthly Revenue, Orders Per Month, Status Pie Charts) will be entirely removed from `Dashboard.tsx`.
-> - The new Dashboard will feature 5 distinct sections displaying actionable table rows and list items instead of standalone metrics.
-> - For the **Receive Payment** quick action on the dashboard, clicking it will navigate to the `ViewOrder` page and seamlessly open the `ReceivePaymentModal` automatically by checking a URL query parameter (e.g., `?action=pay`).
+> The admin portal and backend structure will NOT be modified. This plan only targets the customer-facing frontend.
+
+## Open Questions
+
+1. Should the **Testimonials** be a separate page or a section on the Home page? (We will build it as a section on the Home page by default for better scrolling flow, unless you prefer a dedicated page).
+2. For the **Gallery** page's "Image Preview Modal", we will implement a lightweight, custom React modal with Framer Motion since there are no external Lightbox libraries listed in the stack. Does this sound good?
 
 ## Proposed Changes
 
-### 1. Dashboard Redesign (`src/pages/admin/Dashboard.tsx`)
-- Completely rewrite the Dashboard component to match the premium boutique aesthetics (rounded corners, large spacing, glassmorphism).
-- **Top Summary**: Display only 4 key metrics: Today's Collection, New Orders, Deliveries Today, Pending Collection.
-- **Section 1: Orders by Status**: A vertically stacked, clickable list of statuses showing the count for each. Clicking them navigates to the Orders or Reports tab with the status filter applied.
-- **Section 2: Collection Summary**: A clean list/card displaying collections for Today, This Week, This Month, and Pending.
-- **Section 3: Recent Orders**: A modern responsive table listing the latest orders.
-- **Section 4: Pending Payments**: A table listing orders that are Partially Paid or Unpaid. Rows will have a **Receive Payment** action.
-- **Section 5: Today's Deliveries**: A table listing orders due today (or overdue). Overdue rows will be highlighted visually.
-- **Professional Tip Card**: Added at the bottom of the dashboard with English and Telugu text.
+### Global Styles & Theming
 
-### 2. View Order Updates (`src/pages/admin/orders/ViewOrder.tsx`)
-- Add a `useEffect` hook to parse URL search parameters. If `?action=pay` is detected in the URL, automatically open the `ReceivePaymentModal` without requiring an additional click from the user.
+We will update the core styling to match the luxury boutique theme using the required color palette and typography.
 
-### 3. Service Adjustments (`src/services/dashboardService.ts`)
-- Ensure the `getDashboardData` function provides the necessary detailed arrays (recent orders, deliveries today, pending payments, collections for this week) to populate the new dashboard tables without duplicating logic in the component.
+#### [MODIFY] [index.css](file:///c:/Users/Santhosh/amma/src/index.css)
+- **Changes**: Update CSS variables for root and dark mode:
+  - Primary: Deep Maroon (`#8B0000`)
+  - Secondary: Luxury Gold (`#D4AF37`)
+  - Background: Ivory (`#FAF9F6`)
+  - Accent: Warm Beige (`#F8F4EC`)
+  - Text: Dark Charcoal (`#222`)
+- **Changes**: Set font imports for Playfair Display and Inter. Add base styles for smooth scrolling and clean focus rings.
+
+#### [MODIFY] [tailwind.config.js](file:///c:/Users/Santhosh/amma/tailwind.config.js)
+- **Changes**: Update the Tailwind theme to include the new custom colors explicitly for easy referencing (e.g. `maroon`, `gold`, `ivory`) or update the HSL variables. We will use the HSL equivalents in `index.css` for consistency.
+
+### Navigation and Layout
+
+We will build the sticky, transparent glassmorphism navbar and the luxury footer.
+
+#### [MODIFY] [Layout.tsx](file:///c:/Users/Santhosh/amma/src/components/layout/Layout.tsx)
+- **Changes**: Integrate the premium loading screen with animated tailor scissors logo before resolving to the main layout. Ensure `AnimatePresence` from Framer Motion wraps the `<Outlet />` for smooth page transitions.
+
+#### [MODIFY] [Navbar.tsx](file:///c:/Users/Santhosh/amma/src/components/layout/Navbar.tsx)
+- **Changes**: Add glassmorphism blur effect (`backdrop-blur-md`, transparent background on scroll). Include Links to Home, About, Services, Gallery, Contact, and Admin Login. Add a mobile drawer navigation.
+
+#### [MODIFY] [Footer.tsx](file:///c:/Users/Santhosh/amma/src/components/layout/Footer.tsx)
+- **Changes**: Redesign the footer with luxury aesthetics. Add quick links, business hours, social icons, and copyright.
+
+#### [NEW] [WhatsAppButton.tsx](file:///c:/Users/Santhosh/amma/src/components/layout/WhatsAppButton.tsx)
+- **Changes**: Floating WhatsApp button at bottom right with a pulse animation and a pre-filled message URL.
+
+### Pages (Customer Facing)
+
+We will rebuild the pages using Framer Motion for scroll effects, glass cards, and luxury components.
+
+#### [MODIFY] [Home.tsx](file:///c:/Users/Santhosh/amma/src/pages/Home.tsx)
+- **Changes**: 
+  - **Luxury Full Screen Hero**: Placeholder image, headings in Playfair Display, View Designs/Book Stitching CTAs.
+  - **Feature Highlights**: Animated cards with icons, hover lift, shadow animation.
+  - **Why Choose Us**: Animated counter cards for stats (1000+, 10+, etc.).
+  - **Testimonials Carousel**: Auto-sliding luxury carousel using Framer Motion.
+  - **Premium CTA**: WhatsApp, Call Now, Book Appointment.
+
+#### [MODIFY] [About.tsx](file:///c:/Users/Santhosh/amma/src/pages/About.tsx)
+- **Changes**: Luxury story section, mission, vision, experience, and tailoring philosophy with professional placeholder images.
+
+#### [MODIFY] [Services.tsx](file:///c:/Users/Santhosh/amma/src/pages/Services.tsx)
+- **Changes**: Luxury service cards for Blouse Stitching, Bridal, Kids Wear, Alterations, etc. Incorporate icons, descriptions, starting prices.
+
+#### [NEW] [Gallery.tsx](file:///c:/Users/Santhosh/amma/src/pages/Gallery.tsx)
+- **Changes**: Premium Pinterest Masonry layout ready for future Firestore integration. Include category filters (Boat Neck, Bridal, etc.), Image Preview Modal (Lightbox) with zoom and navigation controls. 
+
+#### [MODIFY] [Contact.tsx](file:///c:/Users/Santhosh/amma/src/pages/Contact.tsx)
+- **Changes**: Professional layout with phone, WhatsApp, email, address, business hours, a floating contact card, and Google Maps placeholder.
+
+#### [MODIFY] [App.tsx](file:///c:/Users/Santhosh/amma/src/App.tsx)
+- **Changes**: Add the `Gallery` route to the customer routes.
+
+### SEO & Metadata
+
+#### [MODIFY] [index.html](file:///c:/Users/Santhosh/amma/index.html)
+- **Changes**: Update Meta Title, Meta Description, Open Graph data to reflect the premium tailoring brand.
 
 ## Verification Plan
 
 ### Automated Tests
-- `npm run build` and `npx tsc --noEmit` will be run to verify the absence of TypeScript errors.
+- Run `npm run build` to ensure the build completes without errors.
+- Run `npx tsc --noEmit` to verify zero TypeScript errors.
 
 ### Manual Verification
-- View the redesigned Dashboard and verify the charts are gone.
-- Check the 5 specific sections for data accuracy.
-- Click the "Receive Payment" action on a pending payment row and verify it correctly routes to the Order Details page and opens the Payment Modal instantly.
+- Start the local server `npm run dev`.
+- Verify the premium loading screen works correctly.
+- Verify that dark mode toggle persists and updates styles elegantly.
+- Navigate through all customer pages to check layouts, animations, and responsiveness.
+- Verify Admin routes (`/admin`) still work perfectly without interference.
