@@ -10,7 +10,6 @@ const generateOrderId = async (): Promise<string> => {
   const prefix = `PT-${currentYear}-`;
   
   const ordersRef = collection(db, COLLECTION_NAME);
-  // Find orders from this year, get the latest one
   const q = query(
     ordersRef,
     where('orderId', '>=', prefix),
@@ -40,24 +39,45 @@ export const orderService = {
     const ordersRef = collection(db, COLLECTION_NAME);
     const orderId = await generateOrderId();
     
+    // Create base order document
     const newOrder = {
       ...data,
       orderId,
-      paidAmount: data.advanceAmount,
-      remainingAmount: data.totalAmount - data.advanceAmount,
-      paymentStatus: (data.totalAmount - data.advanceAmount === 0) ? 'Fully Paid' : (data.advanceAmount === 0 ? 'Unpaid' : 'Partially Paid'),
+      paidAmount: 0,
+      remainingAmount: data.totalAmount,
+      paymentStatus: 'Unpaid' as const,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
     
     const docRef = await addDoc(ordersRef, newOrder);
-    return { id: docRef.id, ...newOrder } as Order;
+    const savedOrder = { id: docRef.id, ...newOrder } as Order;
+
+    // If advanceAmount > 0, automatically create the first payment record
+    if (data.advanceAmount && data.advanceAmount > 0) {
+
+      // Lazy import paymentService logic to avoid circular dependency
+      const { paymentService } = await import('./paymentService');
+      await paymentService.addPayment(docRef.id, {
+        paymentDate: data.orderDate || new Date().toISOString().split('T')[0],
+        paymentType: 'Advance',
+        amountPaid: data.advanceAmount,
+        paymentMethod: 'Cash (నగదు)',
+        remarks: 'Advance paid on order creation',
+      });
+      
+      // Fetch updated order state
+      const updated = await this.getOrder(docRef.id);
+      if (updated) return updated;
+    }
+
+    return savedOrder;
   },
 
   async updateOrder(id: string, data: Partial<OrderFormData>): Promise<void> {
     const docRef = doc(db, COLLECTION_NAME, id);
     
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...data,
       updatedAt: serverTimestamp(),
     };
@@ -101,40 +121,24 @@ export const orderService = {
     const q = query(ordersRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
+    return querySnapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
     })) as Order[];
   },
 
-  async getDashboardStats() {
-    const orders = await this.getOrders();
-    const today = new Date().toISOString().split('T')[0];
+  async getOrdersByCustomer(customerId: string): Promise<Order[]> {
+    const ordersRef = collection(db, COLLECTION_NAME);
+    const q = query(
+      ordersRef,
+      where('customerId', '==', customerId),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
     
-    let totalOrders = 0;
-    let todaysDeliveries = 0;
-    let pendingOrders = 0;
-    let deliveredOrders = 0;
-    
-    orders.forEach(order => {
-      totalOrders++;
-      
-      if (order.deliveryDate === today) {
-        todaysDeliveries++;
-      }
-      
-      if (order.status === 'Delivered (డెలివరీ అయింది)') {
-        deliveredOrders++;
-      } else if (order.status !== 'Cancelled (రద్దు)') {
-        pendingOrders++;
-      }
-    });
-    
-    return {
-      totalOrders,
-      todaysDeliveries,
-      pendingOrders,
-      deliveredOrders
-    };
-  }
+    return querySnapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    })) as Order[];
+  },
 };

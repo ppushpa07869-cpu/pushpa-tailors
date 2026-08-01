@@ -1,57 +1,49 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  IndianRupee, 
-  ShoppingBag, 
-  Truck, 
-  Clock, 
-  ChevronRight,
-  AlertCircle,
-  Lightbulb,
-  CheckCircle,
-  Scissors
-} from 'lucide-react';
+import { Users, Package, CheckCircle, IndianRupee, ChevronRight } from 'lucide-react';
 import { dashboardService } from '../../services/dashboardService';
 import type { DashboardData } from '../../services/dashboardService';
-import { getStatusColor } from '../../utils/orderUtils';
-
-const TIPS = [
-  { en: "Collect pending payments before delivery.", te: "డెలివరీకి ముందు పెండింగ్ చెల్లింపులు వసూలు చేయండి." },
-  { en: "Verify measurements before stitching.", te: "కుట్టడానికి ముందు కొలతలను సరిచూసుకోండి." },
-  { en: "Call customers one day before delivery.", te: "డెలివరీకి ఒక రోజు ముందు కస్టమర్లకు కాల్ చేయండి." },
-  { en: "Update order status promptly to avoid confusion.", te: "గందరగోళాన్ని నివారించడానికి ఆర్డర్ స్థితిని వెంటనే అప్‌డేట్ చేయండి." }
-];
+import { paymentReminderService } from '../../services/paymentReminderService';
+import { pushNotificationService } from '../../services/pushNotificationService';
+import { getStatusColor, getStatusIcon } from '../../utils/orderUtils';
+import NewOrderModal from '../../components/admin/orders/NewOrderModal';
+import PaymentSummaryCard from '../../components/admin/dashboard/PaymentSummaryCard';
+import PaymentRemindersSection from '../../components/admin/dashboard/PaymentRemindersSection';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tipOfTheDay, setTipOfTheDay] = useState(TIPS[0]);
+  const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
+  const remindersSectionRef = useRef<HTMLDivElement>(null);
+
+  const loadData = useCallback(() => {
+    setLoading(true);
+    dashboardService.getDashboardData()
+      .then(setData)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const dashboardData = await dashboardService.getDashboardData();
-        setData(dashboardData);
-      } catch (error) {
-        console.error("Error loading dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadData();
-    
-    // Pick random tip
-    setTipOfTheDay(TIPS[Math.floor(Math.random() * TIPS.length)]);
-  }, []);
+
+    // Register service worker stub for PWA Push architecture
+    if (pushNotificationService.isSupported()) {
+      pushNotificationService.registerServiceWorker().catch(() => {});
+    }
+  }, [loadData]);
+
+  const scrollToReminders = () => {
+    remindersSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full min-h-[60vh]">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
-          <div className="text-gray-400 font-medium">Loading Dashboard...</div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-400 font-medium">Loading Dashboard...</p>
         </div>
       </div>
     );
@@ -59,393 +51,267 @@ export default function Dashboard() {
 
   if (!data) return null;
 
-  const today = new Date().toISOString().split('T')[0];
+  // Greeting based on time
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
 
-  const STATUS_ICONS: Record<string, React.ReactNode> = {
-    'New': <ShoppingBag className="h-5 w-5 text-blue-600" />,
-    'Cutting': <Scissors className="h-5 w-5 text-yellow-600" />,
-    'Stitching': <Clock className="h-5 w-5 text-orange-600" />,
-    'Ready': <CheckCircle className="h-5 w-5 text-purple-600" />,
-    'Delivered': <Truck className="h-5 w-5 text-green-600" />,
-    'Cancelled': <AlertCircle className="h-5 w-5 text-red-600" />
-  };
-
-  const EmptyState = ({ message, subtitle }: { message: string, subtitle?: string }) => (
-    <div className="flex flex-col items-center justify-center p-8 bg-gray-50/50 rounded-2xl border border-gray-100 border-dashed">
-      <div className="h-16 w-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
-        <CheckCircle className="h-8 w-8 text-gray-300" />
-      </div>
-      <h3 className="text-lg font-medium text-gray-900">{message}</h3>
-      {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
-    </div>
+  // Compute Payment Summary
+  const paymentSummary = paymentReminderService.getDashboardPaymentSummary(
+    data.allPayments || [],
+    data.allOrders || []
   );
+
+  const summaryCards = [
+    {
+      label: 'Total Customers',
+      labelTe: 'మొత్తం కస్టమర్లు',
+      value: data.stats.totalCustomers,
+      icon: Users,
+      color: 'blue',
+      bg: 'bg-blue-50',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      accentBg: 'bg-blue-500',
+      route: '/admin/customers',
+    },
+    {
+      label: 'Active Orders',
+      labelTe: 'యాక్టివ్ ఆర్డర్లు',
+      value: data.stats.activeOrders,
+      icon: Package,
+      color: 'orange',
+      bg: 'bg-orange-50',
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      accentBg: 'bg-orange-500',
+      route: '/admin/customers',
+    },
+    {
+      label: 'Ready Orders',
+      labelTe: 'రెడీ ఆర్డర్లు',
+      value: data.stats.readyOrders,
+      icon: CheckCircle,
+      color: 'green',
+      bg: 'bg-green-50',
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-600',
+      accentBg: 'bg-green-500',
+      route: '/admin/customers',
+    },
+    {
+      label: 'Pending Payments',
+      labelTe: 'పెండింగ్ చెల్లింపులు',
+      value: data.stats.pendingPayments,
+      icon: IndianRupee,
+      color: 'red',
+      bg: 'bg-red-50',
+      iconBg: 'bg-red-100',
+      iconColor: 'text-red-600',
+      accentBg: 'bg-red-500',
+      action: scrollToReminders,
+    },
+  ];
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12 animate-fade-in">
-      
-      {/* Top Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-bl-full -z-0 transition-transform group-hover:scale-110" />
-          <div className="relative z-10">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Today's Collection</p>
-                <p className="text-xs text-gray-400 mt-0.5">(ఈరోజు మొత్తం)</p>
-              </div>
-              <div className="p-3 bg-green-100 text-green-600 rounded-xl shadow-inner">
-                <IndianRupee className="h-6 w-6" />
-              </div>
-            </div>
-            <h3 className="text-3xl font-bold text-gray-900">₹{data.stats.todaysCollection}</h3>
-          </div>
+
+      {/* Header Greeting */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-serif text-gray-900 tracking-wide">{greeting} 👋</h1>
+          <p className="text-gray-500 mt-1">Here's your smart payment overview at Pushpa Tailors.</p>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -z-0 transition-transform group-hover:scale-110" />
-          <div className="relative z-10">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">New Orders</p>
-                <p className="text-xs text-gray-400 mt-0.5">(కొత్త ఆర్డర్లు)</p>
-              </div>
-              <div className="p-3 bg-blue-100 text-blue-600 rounded-xl shadow-inner">
-                <ShoppingBag className="h-6 w-6" />
-              </div>
-            </div>
-            <h3 className="text-3xl font-bold text-gray-900">{data.stats.newOrdersCount}</h3>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -z-0 transition-transform group-hover:scale-110" />
-          <div className="relative z-10">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Today's Deliveries</p>
-                <p className="text-xs text-gray-400 mt-0.5">(ఈరోజు డెలివరీలు)</p>
-              </div>
-              <div className="p-3 bg-purple-100 text-purple-600 rounded-xl shadow-inner">
-                <Truck className="h-6 w-6" />
-              </div>
-            </div>
-            <h3 className="text-3xl font-bold text-gray-900">{data.stats.deliveriesTodayCount}</h3>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow group relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -z-0 transition-transform group-hover:scale-110" />
-          <div className="relative z-10">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Pending Collection</p>
-                <p className="text-xs text-gray-400 mt-0.5">(బాకీ మొత్తం)</p>
-              </div>
-              <div className="p-3 bg-orange-100 text-orange-600 rounded-xl shadow-inner">
-                <Clock className="h-6 w-6" />
-              </div>
-            </div>
-            <h3 className="text-3xl font-bold text-orange-600">₹{data.stats.pendingCollection}</h3>
-          </div>
-        </div>
+        <button
+          onClick={() => setIsNewOrderModalOpen(true)}
+          className="flex items-center justify-center gap-2 px-5 py-3 bg-primary text-white rounded-2xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 text-sm"
+        >
+          <span className="text-lg">➕</span> New Order
+        </button>
       </div>
 
+      {/* 1. Premium Dashboard Payment Summary Card */}
+      <PaymentSummaryCard 
+        summary={paymentSummary} 
+        onViewRemindersClick={scrollToReminders} 
+      />
+
+      {/* 2. Four Metric Summary Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {summaryCards.map((card) => {
+          const Icon = card.icon;
+          const handleClick = () => {
+            if (card.action) {
+              card.action();
+            } else if (card.route) {
+              navigate(card.route);
+            }
+          };
+
+          return (
+            <button
+              key={card.label}
+              onClick={handleClick}
+              className={`${card.bg} rounded-2xl p-5 md:p-6 text-left hover:shadow-lg hover:-translate-y-1 transition-all duration-200 group relative overflow-hidden border border-white/60`}
+            >
+              <div className={`absolute top-0 right-0 w-20 h-20 ${card.accentBg} opacity-5 rounded-bl-full`} />
+              <div className={`h-12 w-12 ${card.iconBg} rounded-xl flex items-center justify-center mb-4`}>
+                <Icon className={`h-6 w-6 ${card.iconColor}`} />
+              </div>
+              <div className="text-3xl md:text-4xl font-bold text-gray-900 mb-1">{card.value}</div>
+              <div className="text-sm font-semibold text-gray-700">{card.label}</div>
+              <div className="text-xs text-gray-500 mt-0.5">{card.labelTe}</div>
+              <ChevronRight className="absolute bottom-4 right-4 h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 3. Smart Payment Reminders Section */}
+      <div ref={remindersSectionRef}>
+        <PaymentRemindersSection
+          orders={data.allOrders || []}
+          payments={data.allPayments || []}
+          onRefreshData={loadData}
+        />
+      </div>
+
+      {/* 4. Secondary Grid: Alerts, Recent Orders & Collection Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Left Column */}
+
+        {/* Left Column: Alerts & Recent Orders */}
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* Pending Payments Section */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-serif text-gray-900">Pending Payments</h2>
-              <span className="bg-orange-100 text-orange-800 text-xs font-bold px-3 py-1 rounded-full">{data.pendingPayments.length} Action Needed</span>
-            </div>
-            
-            {data.pendingPayments.length === 0 ? (
-              <EmptyState message="No Pending Payments!" subtitle="All collections are up to date." />
-            ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="divide-y divide-gray-100">
-                  {data.pendingPayments.map(order => {
-                    const isOverdue = order.deliveryDate < today;
-                    return (
-                      <div 
-                        key={order.id} 
-                        className={`p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${
-                          isOverdue ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-gray-900 text-lg">{order.customerName}</span>
-                            {isOverdue && (
-                              <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-sm">
-                                <AlertCircle className="h-3 w-3" /> Overdue
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-500 mb-2">{order.mobileNumber} • #{order.orderId}</div>
-                          <div className="flex items-center gap-4">
-                            <div>
-                              <span className="text-xs text-gray-400">Remaining</span>
-                              <div className="font-bold text-orange-600 text-lg">₹{order.remainingAmount}</div>
-                            </div>
-                            <div className="h-8 w-px bg-gray-200"></div>
-                            <div>
-                              <span className="text-xs text-gray-400">Due Date</span>
-                              <div className={`font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
-                                {new Date(order.deliveryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <button
-                          onClick={() => navigate(`/admin/orders/view/${order.id}?action=pay`)}
-                          className="w-full md:w-auto flex items-center justify-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-sm shadow-primary/20 hover:bg-secondary transition-colors"
-                        >
-                          <span>💰 Receive Payment</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Today's Deliveries Section */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-serif text-gray-900">Today's Deliveries</h2>
-            </div>
-            
-            {data.todaysDeliveries.length === 0 ? (
-              <EmptyState message="No Deliveries Today" subtitle="Relax, your schedule is clear." />
-            ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="divide-y divide-gray-100">
-                  {data.todaysDeliveries.map(order => {
-                    const isOverdue = order.deliveryDate < today;
-                    return (
-                      <div 
-                        key={order.id} 
-                        className={`p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${
-                          isOverdue ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-bold text-gray-900 text-lg">{order.customerName}</span>
-                            {isOverdue && (
-                              <span className="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-2 py-0.5 rounded-sm">
-                                <AlertCircle className="h-3 w-3" /> Overdue
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-500 mb-2">{order.mobileNumber} • #{order.orderId}</div>
-                          <div className="flex flex-wrap gap-2">
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${getStatusColor(order.status)}`}>
-                              {order.status.split(' (')[0]}
-                            </span>
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                              order.paymentStatus === 'Fully Paid' ? 'bg-green-100 text-green-800' : 
-                              order.paymentStatus === 'Partially Paid' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {order.paymentStatus}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <button
-                          onClick={() => navigate(`/admin/orders/view/${order.id}`)}
-                          className="w-full md:w-auto flex items-center justify-center gap-2 bg-white border-2 border-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-all"
-                        >
-                          <Truck className="h-5 w-5 text-gray-400" />
-                          <span>Open Delivery</span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+          {/* Action Required / Overdue Notifications */}
+          {data.notifications.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-serif text-gray-900">⚠️ Action Required</h2>
+                <span className="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">
+                  {data.notifications.length} alerts
+                </span>
               </div>
-            )}
-          </div>
-          
-          {/* Recent Orders Table */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-serif text-gray-900">Recent Orders</h2>
-            </div>
-            
-            {data.recentOrders.length === 0 ? (
-              <EmptyState message="No Recent Orders" />
-            ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="hidden md:grid grid-cols-7 gap-4 p-4 bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  <div className="col-span-2">Order & Customer</div>
-                  <div>Status</div>
-                  <div className="text-right">Total</div>
-                  <div className="text-right">Paid</div>
-                  <div className="text-right">Remaining</div>
-                  <div className="text-right">Action</div>
-                </div>
-                
-                <div className="divide-y divide-gray-100">
-                  {data.recentOrders.slice(0, 5).map(order => (
-                    <div 
-                      key={order.id} 
-                      onClick={() => navigate(`/admin/orders/view/${order.id}`)}
-                      className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 items-center hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <div className="md:col-span-2">
-                        <div className="font-bold text-gray-900">{order.customerName}</div>
-                        <div className="text-xs text-gray-500">#{order.orderId} • {new Date(order.orderDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</div>
-                      </div>
-                      <div className="py-2 md:py-0">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold inline-block ${getStatusColor(order.status)}`}>
-                          {order.status.split(' (')[0]}
-                        </span>
-                      </div>
-                      <div className="flex justify-between md:block text-right">
-                        <span className="md:hidden text-xs text-gray-500">Total: </span>
-                        <span className="font-medium text-gray-900">₹{order.totalAmount}</span>
-                      </div>
-                      <div className="flex justify-between md:block text-right">
-                        <span className="md:hidden text-xs text-gray-500">Paid: </span>
-                        <span className="font-medium text-green-600">₹{order.paidAmount || 0}</span>
-                      </div>
-                      <div className="flex justify-between md:block text-right">
-                        <span className="md:hidden text-xs text-gray-500">Remaining: </span>
-                        <span className="font-bold text-orange-600">₹{order.remainingAmount || 0}</span>
-                      </div>
-                      <div className="text-right mt-2 md:mt-0">
-                        <span className="inline-flex items-center text-sm font-medium text-primary group-hover:text-secondary">
-                          Open <ChevronRight className="h-4 w-4 ml-1" />
-                        </span>
-                      </div>
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-50">
+                {data.notifications.slice(0, 5).map(notif => (
+                  <button
+                    key={notif.id}
+                    onClick={() => navigate(`/admin/customers/${notif.customerId}?orderId=${notif.orderId}`)}
+                    className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors text-left group"
+                  >
+                    <span className="text-2xl flex-shrink-0">{notif.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 truncate">{notif.customerName}</div>
+                      <div className="text-sm text-gray-500">{notif.message}</div>
+                      {notif.remainingAmount > 0 && (
+                        <div className="text-xs text-orange-600 font-medium mt-0.5">₹{notif.remainingAmount} pending</div>
+                      )}
                     </div>
-                  ))}
-                </div>
+                    <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-primary flex-shrink-0 transition-colors" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Orders */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-serif text-gray-900">📋 Recent Orders</h2>
+            </div>
+            {data.recentOrders.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center">
+                <p className="text-gray-500">No orders yet. Start by adding a customer.</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-50">
+                {data.recentOrders.slice(0, 6).map(order => (
+                  <button
+                    key={order.id}
+                    onClick={() => navigate(`/admin/customers/${order.customerId}?orderId=${order.id}`)}
+                    className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors text-left group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900">{order.customerName}</div>
+                      <div className="text-xs text-gray-500">#{order.orderId}</div>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${getStatusColor(order.status)}`}>
+                      {getStatusIcon(order.status)} {order.status}
+                    </span>
+                    <span className={`text-sm font-bold flex-shrink-0 ${order.remainingAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                      ₹{order.remainingAmount > 0 ? order.remainingAmount : order.totalAmount}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-primary flex-shrink-0 transition-colors" />
+                  </button>
+                ))}
               </div>
             )}
           </div>
-
         </div>
 
-        {/* Right Column */}
-        <div className="space-y-8">
-          
-          {/* Section 1: Orders by Status */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-xl font-serif text-gray-900 mb-6">Orders by Status</h2>
-            <div className="space-y-3">
-              {['New', 'Cutting', 'Stitching', 'Ready', 'Delivered', 'Cancelled'].map((statusKey) => {
-                const count = data.statusCounts[statusKey] || 0;
-                return (
-                  <button
-                    key={statusKey}
-                    onClick={() => navigate('/admin/orders')}
-                    className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-primary/30 hover:bg-primary/5 transition-all group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gray-50 rounded-lg group-hover:bg-white transition-colors">
-                        {STATUS_ICONS[statusKey]}
-                      </div>
-                      <span className="font-medium text-gray-900">{statusKey}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-gray-900">{count}</span>
-                      <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-primary transition-colors" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Section 2: Collection Summary */}
-          <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl shadow-xl p-6 text-white relative overflow-hidden">
+        {/* Right Column: Collection Breakdown & Quick Navigation */}
+        <div className="space-y-6">
+          <div className="bg-gradient-to-br from-gray-950 to-gray-900 rounded-2xl shadow-xl p-6 text-white relative overflow-hidden border border-gray-800">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-full" />
-            <h2 className="text-xl font-serif text-white mb-6 relative z-10">Collection Summary</h2>
-            
-            <div className="space-y-6 relative z-10">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <IndianRupee className="h-5 w-5 text-green-400" />
-                  </div>
+            <h2 className="text-xl font-serif text-white mb-6 relative z-10">💵 Collection History</h2>
+            <div className="space-y-5 relative z-10">
+              {[
+                { label: 'Today', labelTe: 'ఈరోజు', value: data.collectionSummary.today, color: 'text-green-400' },
+                { label: 'This Week', labelTe: 'ఈ వారం', value: data.collectionSummary.thisWeek, color: 'text-blue-400' },
+                { label: 'This Month', labelTe: 'ఈ నెల', value: data.collectionSummary.thisMonth, color: 'text-purple-400' },
+              ].map(item => (
+                <div key={item.label} className="flex justify-between items-center">
                   <div>
-                    <div className="text-sm text-gray-400">Today</div>
-                    <div className="text-xs text-gray-500">ఈరోజు</div>
+                    <div className="text-sm text-gray-400">{item.label}</div>
+                    <div className="text-xs text-gray-600">{item.labelTe}</div>
                   </div>
+                  <div className={`text-xl font-bold ${item.color}`}>₹{item.value.toLocaleString('en-IN')}</div>
                 </div>
-                <div className="text-xl font-bold text-white">₹{data.collectionSummary.today}</div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <IndianRupee className="h-5 w-5 text-blue-400" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">This Week</div>
-                    <div className="text-xs text-gray-500">ఈ వారం</div>
-                  </div>
+              ))}
+              <div className="pt-4 border-t border-white/10 flex justify-between items-center">
+                <div>
+                  <div className="text-sm font-medium text-orange-300">Total Pending</div>
+                  <div className="text-xs text-orange-400/70">బాకీ మొత్తం</div>
                 </div>
-                <div className="text-xl font-bold text-white">₹{data.collectionSummary.thisWeek}</div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <IndianRupee className="h-5 w-5 text-purple-400" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-gray-400">This Month</div>
-                    <div className="text-xs text-gray-500">ఈ నెల</div>
-                  </div>
-                </div>
-                <div className="text-xl font-bold text-white">₹{data.collectionSummary.thisMonth}</div>
-              </div>
-
-              <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-500/20 rounded-lg">
-                    <AlertCircle className="h-5 w-5 text-orange-400" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-orange-300">Pending</div>
-                    <div className="text-xs text-orange-400/70">బాకీ మొత్తం</div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-orange-400">₹{data.collectionSummary.pending}</div>
+                <div className="text-2xl font-bold text-orange-400">₹{data.collectionSummary.pending.toLocaleString('en-IN')}</div>
               </div>
             </div>
           </div>
 
-          {/* Professional Tip Card */}
-          <div className="bg-blue-50/80 border border-blue-100 rounded-2xl p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-blue-100 rounded-bl-full -z-0 opacity-50" />
-            <div className="relative z-10 flex gap-4">
-              <div className="flex-shrink-0 mt-1">
-                <div className="h-10 w-10 bg-white rounded-full flex items-center justify-center shadow-sm">
-                  <Lightbulb className="h-5 w-5 text-blue-500" />
-                </div>
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 mb-1 flex items-center gap-2">
-                  Tip of the Day 💡
-                </h3>
-                <p className="text-gray-700 text-sm mb-2">{tipOfTheDay.en}</p>
-                <p className="text-gray-500 text-xs italic">({tipOfTheDay.te})</p>
-              </div>
+          {/* Quick links */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <h3 className="font-serif font-bold text-gray-900 mb-4">Quick Navigation</h3>
+            <div className="space-y-2.5">
+              <button
+                onClick={() => setIsNewOrderModalOpen(true)}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-all text-left text-sm shadow-md shadow-primary/20"
+              >
+                <span className="text-lg">➕</span> New Order
+              </button>
+              <button
+                onClick={() => navigate('/admin/customers')}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition-colors text-left text-sm"
+              >
+                <span className="text-lg">👥</span> View All Customers
+              </button>
+              <button
+                onClick={() => navigate('/admin/reports')}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-gray-50 text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition-colors text-left text-sm"
+              >
+                <span className="text-lg">📊</span> Business Reports
+              </button>
             </div>
           </div>
-
         </div>
       </div>
+
+      {/* New Order Modal */}
+      <NewOrderModal
+        isOpen={isNewOrderModalOpen}
+        onClose={() => {
+          setIsNewOrderModalOpen(false);
+          loadData();
+        }}
+      />
     </div>
   );
 }

@@ -1,13 +1,29 @@
 import { orderService } from './orderService';
+import { customerService } from './customerService';
 import { paymentService } from './paymentService';
 import type { Order } from '../types/order';
+import type { Payment } from '../types/payment';
+
+export interface AppNotification {
+  id: string;
+  type: 'overdue' | 'today' | 'tomorrow' | 'pending_payment' | 'ready';
+  customerId: string;
+  orderId: string;
+  customerName: string;
+  mobileNumber: string;
+  deliveryDate: string;
+  remainingAmount: number;
+  message: string;
+  icon: string;
+  priority: number; // lower = higher priority
+}
 
 export interface DashboardData {
   stats: {
-    todaysCollection: number;
-    newOrdersCount: number;
-    deliveriesTodayCount: number;
-    pendingCollection: number;
+    totalCustomers: number;
+    activeOrders: number;
+    readyOrders: number;
+    pendingPayments: number;
   };
   collectionSummary: {
     today: number;
@@ -15,16 +31,18 @@ export interface DashboardData {
     thisMonth: number;
     pending: number;
   };
-  statusCounts: Record<string, number>;
+  notifications: AppNotification[];
   recentOrders: Order[];
-  pendingPayments: Order[];
-  todaysDeliveries: Order[];
+  pendingPaymentOrders: Order[];
+  allOrders: Order[];
+  allPayments: Payment[];
 }
 
 export const dashboardService = {
   async getDashboardData(): Promise<DashboardData> {
-    const [orders, payments] = await Promise.all([
+    const [orders, customers, payments] = await Promise.all([
       orderService.getOrders(),
+      customerService.getCustomers(),
       paymentService.getAllPayments(),
     ]);
 
@@ -36,23 +54,15 @@ export const dashboardService = {
     weekAgo.setDate(weekAgo.getDate() - 7);
     const weekAgoStr = weekAgo.toISOString().split('T')[0];
 
-    // Stats
+    const tomorrowDate = new Date(today);
+    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+    const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
+
+    // Collection stats from payments
     let todaysCollection = 0;
     let thisWeekCollection = 0;
     let monthlyCollection = 0;
     let pendingCollection = 0;
-    
-    let newOrdersCount = 0;
-    let deliveriesTodayCount = 0;
-
-    const statusCounts: Record<string, number> = {
-      'New': 0,
-      'Cutting': 0,
-      'Stitching': 0,
-      'Ready': 0,
-      'Delivered': 0,
-      'Cancelled': 0
-    };
 
     payments.forEach(payment => {
       if (payment.paymentType !== 'Refund') {
@@ -66,58 +76,140 @@ export const dashboardService = {
       }
     });
 
-    const recentOrders = [...orders].sort((a, b) => b.orderDate.localeCompare(a.orderDate)).slice(0, 10);
-    const pendingPayments: Order[] = [];
-    const todaysDeliveries: Order[] = [];
+    // Dashboard stats
+    let activeOrders = 0;
+    let readyOrders = 0;
+    let pendingPaymentsCount = 0;
+    const pendingPaymentOrders: Order[] = [];
+    const notifications: AppNotification[] = [];
 
     orders.forEach(order => {
-      const isDelivered = order.status === 'Delivered (డెలివరీ అయింది)';
-      const isCancelled = order.status === 'Cancelled (రద్దు)';
+      const isDelivered = order.status === 'Delivered';
 
-      if (!isCancelled) {
-        pendingCollection += order.remainingAmount || 0;
-        
-        if (order.status.startsWith('New')) newOrdersCount++;
+      if (!isDelivered) {
+        activeOrders++;
+        if (order.status === 'Ready') readyOrders++;
+      }
 
-        if (!isDelivered) {
-          if (order.deliveryDate <= todayStr) {
-            deliveriesTodayCount++;
-            todaysDeliveries.push(order);
-          }
+      if (order.remainingAmount > 0 && !isDelivered) {
+        pendingPaymentsCount++;
+        pendingCollection += order.remainingAmount;
+        pendingPaymentOrders.push(order);
+      }
+
+      // Generate notifications
+      if (!isDelivered) {
+        const dDate = order.deliveryDate;
+
+        if (dDate < todayStr) {
+          // Overdue
+          notifications.push({
+            id: `overdue-${order.id}`,
+            type: 'overdue',
+            customerId: order.customerId,
+            orderId: order.id,
+            customerName: order.customerName,
+            mobileNumber: order.mobileNumber,
+            deliveryDate: dDate,
+            remainingAmount: order.remainingAmount,
+            message: `${order.customerName} – Overdue delivery`,
+            icon: '🔴',
+            priority: 1,
+          });
+        } else if (dDate === todayStr) {
+          // Due today
+          notifications.push({
+            id: `today-${order.id}`,
+            type: 'today',
+            customerId: order.customerId,
+            orderId: order.id,
+            customerName: order.customerName,
+            mobileNumber: order.mobileNumber,
+            deliveryDate: dDate,
+            remainingAmount: order.remainingAmount,
+            message: `${order.customerName} – Delivery today`,
+            icon: '🟠',
+            priority: 2,
+          });
+        } else if (dDate === tomorrowStr) {
+          // Due tomorrow
+          notifications.push({
+            id: `tomorrow-${order.id}`,
+            type: 'tomorrow',
+            customerId: order.customerId,
+            orderId: order.id,
+            customerName: order.customerName,
+            mobileNumber: order.mobileNumber,
+            deliveryDate: dDate,
+            remainingAmount: order.remainingAmount,
+            message: `${order.customerName} – Delivery tomorrow`,
+            icon: '🟡',
+            priority: 3,
+          });
+        }
+
+        if (order.status === 'Ready') {
+          // Ready but not delivered
+          notifications.push({
+            id: `ready-${order.id}`,
+            type: 'ready',
+            customerId: order.customerId,
+            orderId: order.id,
+            customerName: order.customerName,
+            mobileNumber: order.mobileNumber,
+            deliveryDate: dDate,
+            remainingAmount: order.remainingAmount,
+            message: `${order.customerName} – Order ready for pickup`,
+            icon: '🟢',
+            priority: 4,
+          });
         }
       }
 
-      const statusKey = order.status.split(' (')[0];
-      if (statusCounts[statusKey] !== undefined) {
-        statusCounts[statusKey]++;
-      }
-
-      if (order.remainingAmount > 0 && !isCancelled) {
-        pendingPayments.push(order);
+      if (order.remainingAmount > 0) {
+        // Pending payment notification (for delivered orders too)
+        if (isDelivered) {
+          notifications.push({
+            id: `payment-${order.id}`,
+            type: 'pending_payment',
+            customerId: order.customerId,
+            orderId: order.id,
+            customerName: order.customerName,
+            mobileNumber: order.mobileNumber,
+            deliveryDate: order.deliveryDate,
+            remainingAmount: order.remainingAmount,
+            message: `${order.customerName} – ₹${order.remainingAmount} pending`,
+            icon: '💰',
+            priority: 2,
+          });
+        }
       }
     });
 
-    // Sort pending payments by remaining amount (desc) or delivery date
-    pendingPayments.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate));
-    todaysDeliveries.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate));
+    // Sort notifications by priority then by delivery date
+    notifications.sort((a, b) => a.priority - b.priority || a.deliveryDate.localeCompare(b.deliveryDate));
+
+    const recentOrders = [...orders].sort((a, b) => b.orderDate.localeCompare(a.orderDate)).slice(0, 10);
+    pendingPaymentOrders.sort((a, b) => a.deliveryDate.localeCompare(b.deliveryDate));
 
     return {
       stats: {
-        todaysCollection,
-        newOrdersCount,
-        deliveriesTodayCount,
-        pendingCollection
+        totalCustomers: customers.length,
+        activeOrders,
+        readyOrders,
+        pendingPayments: pendingPaymentsCount,
       },
       collectionSummary: {
         today: todaysCollection,
         thisWeek: thisWeekCollection,
         thisMonth: monthlyCollection,
-        pending: pendingCollection
+        pending: pendingCollection,
       },
-      statusCounts,
+      notifications: notifications.slice(0, 20),
       recentOrders,
-      pendingPayments: pendingPayments.slice(0, 10), // Take top 10 for dashboard
-      todaysDeliveries: todaysDeliveries.slice(0, 10)
+      pendingPaymentOrders: pendingPaymentOrders.slice(0, 10),
+      allOrders: orders,
+      allPayments: payments,
     };
   }
 };

@@ -1,4 +1,4 @@
-import { collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, query, orderBy, where, limit, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import type { Customer } from '../types/customer';
 
@@ -50,9 +50,21 @@ export const customerService = {
     const q = query(customersRef, orderBy('createdAt', 'desc'));
     const querySnapshot = await getDocs(q);
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
+    return querySnapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
     })) as Customer[];
+  },
+
+  async findCustomerByMobile(mobileNumber: string): Promise<Customer | null> {
+    const customersRef = collection(db, COLLECTION_NAME);
+    const q = query(customersRef, where('mobileNumber', '==', mobileNumber), limit(1));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const docSnap = querySnapshot.docs[0];
+      return { id: docSnap.id, ...docSnap.data() } as Customer;
+    }
+    return null;
   }
 };
+

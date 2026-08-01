@@ -124,11 +124,9 @@ export const paymentService = {
     let fullyPaidOrders = 0;
 
     orders.forEach(order => {
-      if (order.status !== 'Cancelled (రద్దు)') {
-        pendingCollection += order.remainingAmount || 0;
-        if (order.paymentStatus === 'Fully Paid') {
-          fullyPaidOrders++;
-        }
+      pendingCollection += order.remainingAmount || 0;
+      if (order.paymentStatus === 'Fully Paid') {
+        fullyPaidOrders++;
       }
     });
     

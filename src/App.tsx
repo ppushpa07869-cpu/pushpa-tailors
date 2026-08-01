@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+
+// Customer-facing website
 import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import About from './pages/About';
@@ -8,27 +10,28 @@ import Contact from './pages/Contact';
 import Gallery from './pages/Gallery';
 import NotFound from './pages/NotFound';
 
+// Admin framework
 import AdminLayout from './components/admin/AdminLayout';
 import ProtectedRoute from './components/admin/ProtectedRoute';
 import Login from './pages/admin/Login';
+
+// Admin pages
 import Dashboard from './pages/admin/Dashboard';
+import Settings from './pages/admin/Settings';
+
+// Customer management
 import CustomersList from './pages/admin/customers/CustomersList';
-import AddCustomer from './pages/admin/customers/AddCustomer';
 import EditCustomer from './pages/admin/customers/EditCustomer';
+import CustomerDetail from './pages/admin/customers/CustomerDetail';
 
-// Measurements
-import MeasurementsList from './pages/admin/customers/measurements/MeasurementsList';
-import AddMeasurement from './pages/admin/customers/measurements/AddMeasurement';
-import EditMeasurement from './pages/admin/customers/measurements/EditMeasurement';
+// Customer-scoped order pages
+import AddOrder from './pages/admin/customers/orders/AddOrder';
+import EditOrder from './pages/admin/customers/orders/EditOrder';
 
-// Orders
-import OrdersList from './pages/admin/orders/OrdersList';
-import AddOrder from './pages/admin/orders/AddOrder';
-import EditOrder from './pages/admin/orders/EditOrder';
+// Standalone order view (accessible from notifications etc.)
 import ViewOrder from './pages/admin/orders/ViewOrder';
 
-// Payments
-import PaymentsList from './pages/admin/payments/PaymentsList';
+// Payments (keep for direct payment routes)
 import OrderPayments from './pages/admin/payments/OrderPayments';
 
 // Reports
@@ -39,29 +42,45 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Admin Login (public) */}
           <Route path="/admin/login" element={<Login />} />
+
+          {/* Admin Protected Routes */}
           <Route path="/admin" element={<ProtectedRoute />}>
             <Route element={<AdminLayout />}>
+              {/* Default redirect */}
+              <Route index element={<Navigate to="dashboard" replace />} />
+
+              {/* Dashboard */}
               <Route path="dashboard" element={<Dashboard />} />
+
+              {/* Customers & Orders unified workflow */}
               <Route path="customers" element={<CustomersList />} />
-              <Route path="customers/add" element={<AddCustomer />} />
+              <Route path="customers/add" element={<AddOrder />} />
+              <Route path="orders/new" element={<AddOrder />} />
               <Route path="customers/edit/:id" element={<EditCustomer />} />
-              <Route path="customers/:customerId/measurements" element={<MeasurementsList />} />
-              <Route path="customers/:customerId/measurements/add" element={<AddMeasurement />} />
-              <Route path="customers/:customerId/measurements/:id/edit" element={<EditMeasurement />} />
-              
-              <Route path="orders" element={<OrdersList />} />
-              <Route path="orders/add" element={<AddOrder />} />
-              <Route path="orders/edit/:orderId" element={<EditOrder />} />
+              <Route path="customers/:customerId" element={<CustomerDetail />} />
+
+              {/* Customer-scoped orders */}
+              <Route path="customers/:customerId/orders/add" element={<AddOrder />} />
+              <Route path="customers/:customerId/orders/edit/:orderId" element={<EditOrder />} />
+
+
+              {/* Standalone order view (from notifications/dashboard links) */}
               <Route path="orders/view/:orderId" element={<ViewOrder />} />
+
+              {/* Payments (still reachable for direct links) */}
               <Route path="orders/:orderId/payments" element={<OrderPayments />} />
 
-              <Route path="payments" element={<PaymentsList />} />
-              
+              {/* Reports */}
               <Route path="reports" element={<ReportsModule />} />
+
+              {/* Settings */}
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Route>
-          
+
+          {/* Customer-facing website (completely unchanged) */}
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="about" element={<About />} />

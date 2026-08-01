@@ -3,7 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- SEO -->
     <title>PUSHPA TAILORS | Premium Boutique Tailoring</title>
     <meta name="description" content="Elegant Stitching, Perfect Fitting, Timeless Designs. Welcome to PUSHPA TAILORS, your premium destination for boutique tailoring services." />
     <meta property="og:title" content="PUSHPA TAILORS | Premium Boutique" />
@@ -12,6 +14,42 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="PUSHPA TAILORS | Premium Boutique" />
     <meta name="twitter:description" content="Elegant Stitching, Perfect Fitting, Timeless Designs." />
+
+    <!-- PWA Architecture (Service Worker NOT yet implemented) -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#8B0000" />
+
+    <!-- Android Chrome -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- iOS Safari (Apple) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Pushpa Tailors" />
+
+    <!-- MS Tiles -->
+    <meta name="msapplication-TileColor" content="#8B0000" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+
+    <!-- Splash / Icons (referenced for future icon generation) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+
+    <!--
+      PWA Architecture Notes (Phase 9 – Prepared, Not Yet Active):
+      - Service Worker:   NOT registered yet (planned for Phase 10)
+      - Offline Sync:     NOT implemented (planned for Phase 10)
+      - Push Notifications: NOT active (FCM architecture ready in manifest)
+      - Background Sync:  NOT active (planned for Phase 10)
+      - Update Detection: NOT active (planned for Phase 10)
+      
+      To activate in Phase 10:
+      1. Create public/sw.js (workbox-based service worker)
+      2. Register in src/main.tsx with: navigator.serviceWorker.register('/sw.js')
+      3. Generate actual icon files in /public/icons/
+      4. Create splash screens for iOS
+    -->
   </head>
   <body>
     <div id="root"></div>

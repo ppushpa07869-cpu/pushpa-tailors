@@ -1,5 +1,5 @@
-import { Edit, Trash2, Ruler } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Edit, Trash2, ChevronRight, Phone } from 'lucide-react';
 import type { Customer } from '../../../types/customer';
 
 interface CustomerTableProps {
@@ -9,99 +9,77 @@ interface CustomerTableProps {
 }
 
 export default function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProps) {
-  const formatDate = (dateValue: any) => {
-    if (!dateValue) return 'N/A';
-    if (typeof dateValue === 'string') return dateValue;
-    if (dateValue.toDate) {
-      return dateValue.toDate().toLocaleDateString();
-    }
-    return new Date(dateValue).toLocaleDateString();
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed': return 'bg-green-100 text-green-800';
-      case 'In Progress': return 'bg-blue-100 text-blue-800';
-      case 'Delivered': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-yellow-100 text-yellow-800';
-    }
-  };
+  const navigate = useNavigate();
 
   if (customers.length === 0) {
     return (
-      <div className="text-center py-12 bg-white rounded-sm border border-gray-200">
-        <p className="text-gray-500">No customers found.</p>
+      <div className="text-center py-12 bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div className="text-4xl mb-3">👥</div>
+        <p className="text-gray-500 font-medium">No customers found.</p>
+        <p className="text-sm text-gray-400 mt-1">Add your first customer to get started.</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto bg-white rounded-sm shadow-sm border border-gray-200">
-      <table className="min-w-full divide-y divide-gray-200">
+    <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-100">
+      <table className="min-w-full divide-y divide-gray-100">
         <thead className="bg-gray-50">
           <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Customer ID
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Name
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Mobile
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Delivery Date
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
+            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Mobile</th>
+            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+            <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white divide-y divide-gray-50">
           {customers.map((customer) => (
-            <tr key={customer.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-500">
+            <tr
+              key={customer.id}
+              className="hover:bg-gray-50 transition-colors cursor-pointer group"
+              onClick={() => navigate(`/admin/customers/${customer.id}`)}
+            >
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                    {customer.customerName[0]?.toUpperCase()}
+                  </div>
+                  <div className="font-semibold text-gray-900 group-hover:text-primary transition-colors">
+                    {customer.customerName}
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                  <Phone className="h-3.5 w-3.5 text-gray-400" />
+                  {customer.mobileNumber}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-400">
                 {customer.customerId}
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{customer.customerName}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {customer.mobileNumber}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {formatDate(customer.deliveryDate)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(customer.status)}`}>
-                  {customer.status}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <div className="flex justify-end gap-3">
-                  <Link 
-                    to={`/admin/customers/${customer.id}/measurements`}
-                    className="text-indigo-600 hover:text-indigo-900 transition-colors"
-                    title="Measurements"
-                  >
-                    <Ruler className="h-4 w-4" />
-                  </Link>
-                  <button 
+              <td className="px-6 py-4 whitespace-nowrap text-right">
+                <div className="flex justify-end items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <button
                     onClick={() => onEdit(customer.id!)}
-                    className="text-blue-600 hover:text-blue-900 transition-colors"
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
                     title="Edit"
                   >
                     <Edit className="h-4 w-4" />
                   </button>
-                  <button 
+                  <button
                     onClick={() => onDelete(customer)}
-                    className="text-red-600 hover:text-red-900 transition-colors"
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => navigate(`/admin/customers/${customer.id}`)}
+                    className="p-2 text-gray-400 hover:text-primary hover:bg-primary/5 rounded-xl transition-colors"
+                    title="View Details"
+                  >
+                    <ChevronRight className="h-4 w-4" />
                   </button>
                 </div>
               </td>
