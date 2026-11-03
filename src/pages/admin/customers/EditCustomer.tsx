@@ -8,66 +8,39 @@ import CustomerForm from '../../../components/admin/customers/CustomerForm';
 export default function EditCustomer() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   const [initialData, setInitialData] = useState<CustomerFormData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchCustomer = async () => {
-      if (!id) return;
-      
-      try {
-        const customer = await customerService.getCustomer(id);
-        if (customer) {
-          // Format date for the input type="date"
-          let formattedDate = '';
-          if (customer.deliveryDate) {
-            const dDate = typeof customer.deliveryDate === 'string' 
-              ? new Date(customer.deliveryDate)
-              : (customer.deliveryDate as any).toDate ? (customer.deliveryDate as any).toDate() : new Date(customer.deliveryDate as any);
-            
-            if (!isNaN(dDate.getTime())) {
-              formattedDate = dDate.toISOString().split('T')[0];
-            }
-          }
-          
-          setInitialData({
-            customerName: customer.customerName,
-            mobileNumber: customer.mobileNumber,
-            alternateNumber: customer.alternateNumber || '',
-            address: customer.address || '',
-            measurementType: customer.measurementType || 'Standard',
-            blouseType: customer.blouseType || 'Normal',
-            deliveryDate: formattedDate,
-            totalAmount: customer.totalAmount,
-            advanceAmount: customer.advanceAmount,
-            remainingAmount: customer.remainingAmount,
-            status: customer.status,
-          });
-        } else {
+    if (!id) return;
+    customerService.getCustomer(id)
+      .then(customer => {
+        if (!customer) {
           navigate('/admin/customers');
+          return;
         }
-      } catch (error) {
-        console.error("Error fetching customer:", error);
-        navigate('/admin/customers');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCustomer();
+        setInitialData({
+          customerName: customer.customerName,
+          mobileNumber: customer.mobileNumber,
+          alternateNumber: customer.alternateNumber || '',
+          address: customer.address || '',
+        });
+      })
+      .catch(() => navigate('/admin/customers'))
+      .finally(() => setIsLoading(false));
   }, [id, navigate]);
 
   const handleSubmit = async (data: CustomerFormData) => {
     if (!id) return;
-    
     setIsSubmitting(true);
     try {
       await customerService.updateCustomer(id, data);
-      navigate('/admin/customers');
+      navigate(`/admin/customers/${id}`);
     } catch (error) {
-      console.error("Error updating customer:", error);
+      console.error('Error updating customer:', error);
+      alert('Failed to update customer. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -75,29 +48,34 @@ export default function EditCustomer() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+      <div className="flex justify-center items-center py-24">
+        <div className="h-10 w-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center gap-4">
-        <button 
-          onClick={() => navigate('/admin/customers')}
-          className="p-2 text-gray-500 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+        <button
+          onClick={() => navigate(`/admin/customers/${id}`)}
+          className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors font-medium"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4" />
+          Back to Customer
         </button>
+      </div>
+
+      <div>
         <h1 className="text-3xl font-serif text-gray-900">Edit Customer</h1>
+        <p className="text-gray-500 mt-1">Update customer contact details.</p>
       </div>
 
       {initialData && (
-        <CustomerForm 
+        <CustomerForm
           initialData={initialData}
-          onSubmit={handleSubmit} 
-          isSubmitting={isSubmitting} 
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
         />
       )}
     </div>

@@ -79,7 +79,7 @@ export default function OrderReport({
       o.mobileNumber,
       new Date(o.orderDate).toLocaleDateString(),
       new Date(o.deliveryDate).toLocaleDateString(),
-      o.status.split(' (')[0],
+      o.status,
       o.paymentStatus,
       o.totalAmount,
       o.paidAmount,
@@ -93,7 +93,7 @@ export default function OrderReport({
         'Mobile': o.mobileNumber,
         'Order Date': new Date(o.orderDate).toLocaleDateString(),
         'Delivery Date': new Date(o.deliveryDate).toLocaleDateString(),
-        'Status': o.status.split(' (')[0],
+        'Status': o.status,
         'Payment Status': o.paymentStatus,
         'Total Amount': o.totalAmount,
         'Paid Amount': o.paidAmount,
@@ -141,7 +141,7 @@ export default function OrderReport({
                 <td className="px-6 py-4 space-y-1">
                   <div>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${getStatusColor(o.status)}`}>
-                      {o.status.split(' (')[0]}
+                      {o.status}
                     </span>
                   </div>
                   <div>

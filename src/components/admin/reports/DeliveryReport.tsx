@@ -57,14 +57,14 @@ export default function DeliveryReport({
       tomorrowDate.setDate(tomorrowDate.getDate() + 1);
       const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
 
-      const isDelivered = item.status === 'Delivered (డెలివరీ అయింది)';
+      const isDelivered = item.status === 'Delivered';
 
       if (statusFilter === 'due_today') {
         if (item.deliveryDate !== todayStr || isDelivered) return false;
       } else if (statusFilter === 'due_tomorrow') {
         if (item.deliveryDate !== tomorrowStr || isDelivered) return false;
       } else if (statusFilter === 'overdue') {
-        if (item.deliveryDate >= todayStr || isDelivered || item.status === 'Cancelled (రద్దు)') return false;
+        if (item.deliveryDate >= todayStr || isDelivered) return false;
       } else if (statusFilter === 'delivered') {
         if (!isDelivered) return false;
       }
@@ -88,7 +88,7 @@ export default function DeliveryReport({
       o.mobileNumber,
       new Date(o.orderDate).toLocaleDateString(),
       new Date(o.deliveryDate).toLocaleDateString(),
-      o.status.split(' (')[0],
+      o.status,
       o.paymentStatus
     ]);
 
@@ -99,7 +99,7 @@ export default function DeliveryReport({
         'Mobile': o.mobileNumber,
         'Order Date': new Date(o.orderDate).toLocaleDateString(),
         'Delivery Date': new Date(o.deliveryDate).toLocaleDateString(),
-        'Status': o.status.split(' (')[0],
+        'Status': o.status,
         'Payment Status': o.paymentStatus
       }));
       exportToExcel(excelReadyData, 'Delivery_Report');
@@ -131,7 +131,7 @@ export default function DeliveryReport({
           ) : (
             filteredData.map(o => {
               const todayStr = new Date().toISOString().split('T')[0];
-              const isOverdue = o.deliveryDate < todayStr && o.status !== 'Delivered (డెలివరీ అయింది)' && o.status !== 'Cancelled (రద్దు)';
+              const isOverdue = o.deliveryDate < todayStr && o.status !== 'Delivered';
               
               return (
                 <tr key={o.id} className={`hover:bg-gray-50 transition-colors ${isOverdue ? 'bg-red-50/50' : ''}`}>
@@ -151,7 +151,7 @@ export default function DeliveryReport({
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(o.status)}`}>
-                      {o.status.split(' (')[0]}
+                      {o.status}
                     </span>
                   </td>
                 </tr>

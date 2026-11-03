@@ -1,6 +1,6 @@
 import { Eye, Edit, Trash2, AlertCircle } from 'lucide-react';
 import type { Order } from '../../../types/order';
-import { getStatusColor } from '../../../utils/orderUtils';
+import { getStatusColor, getStatusIcon } from '../../../utils/orderUtils';
 
 interface OrderTableProps {
   orders: Order[];
@@ -11,7 +11,7 @@ interface OrderTableProps {
 
 export default function OrderTable({ orders, onView, onEdit, onDelete }: OrderTableProps) {
   const checkOverdue = (deliveryDate: string, status: string) => {
-    if (status === 'Delivered (డెలివరీ అయింది)' || status === 'Cancelled (రద్దు)') return false;
+    if (status === 'Delivered') return false;
     const today = new Date().toISOString().split('T')[0];
     return deliveryDate < today;
   };
@@ -63,8 +63,8 @@ export default function OrderTable({ orders, onView, onEdit, onDelete }: OrderTa
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                      {order.status}
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
+                      {getStatusIcon(order.status)} {order.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">

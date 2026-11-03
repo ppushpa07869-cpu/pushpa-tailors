@@ -1,102 +1,158 @@
-import { Eye, Edit, Trash2, Calendar, Phone, IndianRupee, AlertCircle } from 'lucide-react';
+import { Eye, Edit, Trash2, Calendar, Phone, IndianRupee, AlertCircle, CheckCircle } from 'lucide-react';
 import type { Order } from '../../../types/order';
-import { getStatusColor } from '../../../utils/orderUtils';
+import { getStatusColor, getStatusIcon, getNextStatus } from '../../../utils/orderUtils';
 
 interface OrderCardProps {
-  orders: Order[];
+  order: Order;
   onView: (order: Order) => void;
-  onEdit: (order: Order) => void;
-  onDelete: (order: Order) => void;
+  onEdit?: (order: Order) => void;
+  onDelete?: (order: Order) => void;
+  onReceivePayment?: (order: Order) => void;
+  onMarkDelivered?: (order: Order) => void;
 }
 
-export default function OrderCard({ orders, onView, onEdit, onDelete }: OrderCardProps) {
-  const checkOverdue = (deliveryDate: string, status: string) => {
-    if (status === 'Delivered (డెలివరీ అయింది)' || status === 'Cancelled (రద్దు)') return false;
-    const today = new Date().toISOString().split('T')[0];
-    return deliveryDate < today;
-  };
-
-  if (orders.length === 0) {
-    return (
-      <div className="md:hidden bg-white p-8 text-center text-gray-500 rounded-sm border border-gray-100 shadow-sm">
-        No orders found matching your search.
-      </div>
-    );
-  }
+export default function OrderCard({
+  order,
+  onView,
+  onEdit,
+  onDelete,
+  onReceivePayment,
+  onMarkDelivered,
+}: OrderCardProps) {
+  const today = new Date().toISOString().split('T')[0];
+  const isOverdue = order.deliveryDate < today && order.status !== 'Delivered';
+  const nextStatus = getNextStatus(order.status);
 
   return (
-    <div className="md:hidden space-y-4">
-      {orders.map((order) => {
-        const isOverdue = checkOverdue(order.deliveryDate, order.status);
-        
-        return (
-          <div key={order.id} className={`bg-white p-4 rounded-sm shadow-sm border ${isOverdue ? 'border-red-300' : 'border-gray-100'}`}>
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-gray-900">{order.orderId}</h3>
-                  {isOverdue && (
-                    <span className="flex items-center gap-1 text-[10px] text-red-600 bg-red-50 px-2 py-0.5 rounded-full font-medium">
-                      <AlertCircle className="w-3 h-3" /> Overdue
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm font-medium text-gray-800 mt-1">{order.customerName}</p>
-              </div>
-              <span className={`px-2 py-1 rounded-full text-[10px] font-medium ${getStatusColor(order.status)}`}>
-                {order.status}
-              </span>
-            </div>
-
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Phone className="h-4 w-4 text-gray-400" />
-                <span>{order.mobileNumber}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Calendar className="h-4 w-4 text-gray-400" />
-                <span>Delivery: <span className={isOverdue ? 'text-red-600 font-medium' : ''}>{new Date(order.deliveryDate).toLocaleDateString()}</span></span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <IndianRupee className="h-4 w-4 text-gray-400" />
-                <span className="flex-1 flex justify-between">
-                  <span>Paid: ₹ {order.paidAmount}</span>
-                  <span className={`font-medium ${order.remainingAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}>Rem: ₹ {order.remainingAmount}</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`px-2 py-1 rounded-sm text-[10px] font-bold uppercase tracking-wider ${
-                  order.paymentStatus === 'Fully Paid' ? 'bg-green-100 text-green-800' : 
-                  order.paymentStatus === 'Partially Paid' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {order.paymentStatus}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-3 border-t border-gray-50">
-              <button
-                onClick={() => onView(order)}
-                className="flex-1 flex items-center justify-center gap-1 py-2 bg-blue-50 text-blue-600 rounded-sm text-sm font-medium hover:bg-blue-100 transition-colors"
-              >
-                <Eye className="h-4 w-4" /> View
-              </button>
-              <button
-                onClick={() => onEdit(order)}
-                className="flex-1 flex items-center justify-center gap-1 py-2 bg-green-50 text-green-600 rounded-sm text-sm font-medium hover:bg-green-100 transition-colors"
-              >
-                <Edit className="h-4 w-4" /> Edit
-              </button>
-              <button
-                onClick={() => onDelete(order)}
-                className="flex-1 flex items-center justify-center gap-1 py-2 bg-red-50 text-red-600 rounded-sm text-sm font-medium hover:bg-red-100 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" /> Delete
-              </button>
-            </div>
+    <div className={`bg-white rounded-2xl p-5 border shadow-sm hover:shadow-md transition-all ${
+      isOverdue ? 'border-red-200 bg-red-50/20' : 'border-gray-100'
+    }`}>
+      {/* Header: Customer Name, Phone & Status Badge */}
+      <div className="flex justify-between items-start gap-3 mb-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-serif font-bold text-gray-900 text-lg truncate">{order.customerName}</h3>
+            <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">
+              #{order.orderId}
+            </span>
           </div>
-        );
-      })}
+          <div className="flex items-center gap-1.5 text-sm text-gray-500 mt-1 flex-wrap">
+            <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+            <a href={`tel:${order.mobileNumber}`} className="hover:text-primary transition-colors">
+              {order.mobileNumber}
+            </a>
+            {order.orderType && (
+              <span className="ml-1 text-xs font-semibold px-2 py-0.5 bg-primary/10 text-primary rounded-md border border-primary/20">
+                {order.orderType} {order.quantity && order.quantity > 1 ? `(${order.quantity})` : ''}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+          <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${getStatusColor(order.status)}`}>
+            {getStatusIcon(order.status)} {order.status}
+          </span>
+          {isOverdue && (
+            <span className="flex items-center gap-1 text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">
+              <AlertCircle className="h-3 w-3" /> Overdue
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Metrics Row: Delivery Date & Pending Amount */}
+      <div className="grid grid-cols-2 gap-3 py-3 px-4 bg-gray-50/80 rounded-xl mb-4 text-sm">
+        <div>
+          <span className="text-xs text-gray-400 font-medium block">Delivery Date</span>
+          <span className={`font-semibold flex items-center gap-1 mt-0.5 ${
+            isOverdue ? 'text-red-600' : 'text-gray-800'
+          }`}>
+            <Calendar className="h-3.5 w-3.5 text-gray-400" />
+            {new Date(order.deliveryDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+          </span>
+        </div>
+        <div className="text-right">
+          <span className="text-xs text-gray-400 font-medium block">Pending Amount</span>
+          <span className={`font-bold text-base mt-0.5 block ${
+            order.remainingAmount > 0 ? 'text-orange-600' : 'text-green-600'
+          }`}>
+            ₹{order.remainingAmount > 0 ? order.remainingAmount : 0}
+            {order.remainingAmount === 0 && <span className="text-xs font-normal text-green-600 ml-1">(Paid)</span>}
+          </span>
+        </div>
+      </div>
+
+      {/* Design Remarks / Notes if present */}
+      {order.designRemarks && (
+        <p className="text-xs text-gray-500 italic mb-4 line-clamp-1 bg-white p-2 rounded-lg border border-gray-100">
+          "{order.designRemarks}"
+        </p>
+      )}
+
+      {/* Large Quick Action Buttons */}
+      <div className="grid grid-cols-3 gap-2">
+        {/* Receive Payment Button */}
+        <button
+          onClick={() => onReceivePayment ? onReceivePayment(order) : onView(order)}
+          disabled={order.remainingAmount === 0}
+          className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
+            order.remainingAmount > 0
+              ? 'bg-primary text-white hover:bg-primary/90 hover:scale-[1.02]'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          }`}
+          title={order.remainingAmount === 0 ? 'Order Fully Paid' : 'Receive Payment'}
+        >
+          <IndianRupee className="h-4 w-4" />
+          <span className="truncate">Payment</span>
+        </button>
+
+        {/* Mark Delivered / Next Status Button */}
+        <button
+          onClick={() => onMarkDelivered ? onMarkDelivered(order) : onView(order)}
+          disabled={order.status === 'Delivered'}
+          className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all shadow-sm ${
+            order.status !== 'Delivered'
+              ? 'bg-green-600 text-white hover:bg-green-700 hover:scale-[1.02]'
+              : 'bg-green-50 text-green-700 cursor-default border border-green-200'
+          }`}
+        >
+          <CheckCircle className="h-4 w-4" />
+          <span className="truncate">{order.status === 'Delivered' ? 'Delivered' : nextStatus ? `Mark ${nextStatus}` : 'Deliver'}</span>
+        </button>
+
+        {/* View Details Button */}
+        <button
+          onClick={() => onView(order)}
+          className="flex flex-col sm:flex-row items-center justify-center gap-1.5 py-2.5 px-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl text-xs font-bold transition-all"
+        >
+          <Eye className="h-4 w-4" />
+          <span className="truncate">View</span>
+        </button>
+      </div>
+
+      {/* Optional Edit / Delete Row */}
+      {(onEdit || onDelete) && (
+        <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-gray-100 text-xs">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(order)}
+              className="text-gray-400 hover:text-blue-600 flex items-center gap-1 py-1 px-2 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              <Edit className="h-3.5 w-3.5" /> Edit
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(order)}
+              className="text-gray-400 hover:text-red-600 flex items-center gap-1 py-1 px-2 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
+

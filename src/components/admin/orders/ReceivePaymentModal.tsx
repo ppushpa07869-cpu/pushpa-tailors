@@ -12,11 +12,11 @@ interface ReceivePaymentModalProps {
   isLoading: boolean;
 }
 
-export default function ReceivePaymentModal({ 
-  isOpen, onClose, onSubmit, totalAmount, paidAmount, remainingAmount, isLoading 
+export default function ReceivePaymentModal({
+  isOpen, onClose, onSubmit, totalAmount, paidAmount, remainingAmount, isLoading
 }: ReceivePaymentModalProps) {
   const [amountPaid, setAmountPaid] = useState<number | ''>('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash (నగదు)');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Cash');
   const [remarks, setRemarks] = useState('');
 
   if (!isOpen) return null;
@@ -24,7 +24,7 @@ export default function ReceivePaymentModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!amountPaid || amountPaid <= 0) return;
-    
+
     await onSubmit({
       paymentDate: new Date().toISOString().split('T')[0],
       amountPaid: Number(amountPaid),
@@ -41,14 +41,14 @@ export default function ReceivePaymentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      
+
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in border border-gray-100">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
           <h2 className="text-xl font-serif text-gray-900 flex items-center gap-2">
             <IndianRupee className="h-5 w-5 text-green-600" />
             Receive Payment
           </h2>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-200 rounded-full transition-colors"
           >
@@ -61,15 +61,15 @@ export default function ReceivePaymentModal({
           <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-3 gap-4 border border-gray-100">
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-1">Total</div>
-              <div className="font-medium text-gray-900">₹{totalAmount}</div>
+              <div className="font-medium text-gray-900">â‚¹{totalAmount}</div>
             </div>
             <div className="text-center border-l border-r border-gray-200">
               <div className="text-xs text-gray-500 mb-1">Paid</div>
-              <div className="font-medium text-green-600">₹{paidAmount}</div>
+              <div className="font-medium text-green-600">â‚¹{paidAmount}</div>
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-1">Remaining</div>
-              <div className="font-medium text-orange-600">₹{remainingAmount}</div>
+              <div className="font-medium text-orange-600">â‚¹{remainingAmount}</div>
             </div>
           </div>
 
@@ -79,18 +79,18 @@ export default function ReceivePaymentModal({
               onClick={handleFullPayment}
               className="w-full py-2 bg-primary/10 text-primary font-medium rounded-md hover:bg-primary/20 transition-colors border border-primary/20"
             >
-              Pay Full Remaining ₹{remainingAmount}
+              Pay Full Remaining â‚¹{remainingAmount}
             </button>
           )}
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Amount (₹) <span className="text-red-500">*</span>
+                Amount (â‚¹) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500">₹</span>
+                  <span className="text-gray-500">â‚¹</span>
                 </div>
                 <input
                   type="number"
@@ -115,8 +115,8 @@ export default function ReceivePaymentModal({
                 required
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-900"
               >
-                <option value="Cash (నగదు)">Cash</option>
-                <option value="UPI (యూపీఐ)">UPI</option>
+                <option value="Cash (à°¨à°—à°¦à±)">Cash</option>
+                <option value="UPI (à°¯à±‚à°ªà±€à°)">UPI</option>
                 <option value="PhonePe">PhonePe</option>
                 <option value="Google Pay">Google Pay</option>
                 <option value="Paytm">Paytm</option>

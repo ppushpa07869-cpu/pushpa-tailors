@@ -22,3 +22,36 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Local backups and design-processing files
+*.backup.ts
+*.measurement-backup.ts
+batch_dst_convert.py
+build_catalog_csv.py
+dst_preview.py
+optimize_previews.py
+test-1096*.png
+src/utils/testDstPreview.py
+src/utils/batchConvertDst.py
+
+# Ignore local backup and test files
+*.backup.ts
+*.measurement-backup.ts
+test-1096*.png
+
+src/components/admin/orders/SimpleOrderForm.backup.tsx
+
+src/components/admin/orders/SimpleOrderForm.measurement-backup.tsx
+src/pages/admin/customers/orders/EditOrder.measurement-backup.tsx
+src/pages/admin/orders/ViewOrder.measurement-backup.tsx
+
+# Large local design image collection
+/public/designs/
+
+# Temporary backup files
+*.backup

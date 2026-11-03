@@ -1,14 +1,12 @@
 import { Timestamp } from 'firebase/firestore';
-
-export type PaymentMethod = 
-  | 'Cash (నగదు)' 
-  | 'UPI (యూపీఐ)' 
-  | 'PhonePe' 
-  | 'Google Pay' 
-  | 'Paytm' 
-  | 'Bank Transfer' 
+export type PaymentMethod =
+  | 'Cash'
+  | 'UPI'
+  | 'PhonePe'
+  | 'Google Pay'
+  | 'Paytm'
+  | 'Bank Transfer'
   | 'Other';
-
 export type PaymentType = 
   | 'Advance' 
   | 'Partial Payment' 
