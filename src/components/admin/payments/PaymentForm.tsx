@@ -11,7 +11,7 @@ interface PaymentFormProps {
 }
 
 const PAYMENT_METHODS: PaymentMethod[] = [
-  'Cash (నగదు)', 'UPI (యూపీఐ)', 'PhonePe', 'Google Pay', 'Paytm', 'Bank Transfer', 'Other'
+  'Cash', 'UPI', 'PhonePe', 'Google Pay', 'Paytm', 'Bank Transfer', 'Other'
 ];
 
 const PAYMENT_TYPES: PaymentType[] = [
@@ -21,7 +21,7 @@ const PAYMENT_TYPES: PaymentType[] = [
 export default function PaymentForm({ order, onSubmit, onCancel, isLoading }: PaymentFormProps) {
   const [formData, setFormData] = useState<PaymentFormData>({
     paymentDate: new Date().toISOString().split('T')[0],
-    paymentMethod: 'Cash (నగదు)',
+    paymentMethod: 'Cash',
     paymentReference: '',
     amountPaid: 0,
     paymentType: 'Partial Payment',
@@ -43,7 +43,7 @@ export default function PaymentForm({ order, onSubmit, onCancel, isLoading }: Pa
       return;
     }
     if (formData.amountPaid > order.remainingAmount && formData.paymentType !== 'Refund') {
-      alert(`Amount cannot exceed the remaining balance of ₹ ${order.remainingAmount}`);
+      alert(`Amount cannot exceed the remaining balance of â‚¹ ${order.remainingAmount}`);
       return;
     }
     await onSubmit(formData);
@@ -55,7 +55,7 @@ export default function PaymentForm({ order, onSubmit, onCancel, isLoading }: Pa
         {/* Payment Date */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Payment Date (చెల్లింపు తేదీ) <span className="text-red-500">*</span>
+            Payment Date (à°šà±†à°²à±à°²à°¿à°‚à°ªà± à°¤à±‡à°¦à±€) <span className="text-red-500">*</span>
           </label>
           <input
             type="date"
@@ -70,7 +70,7 @@ export default function PaymentForm({ order, onSubmit, onCancel, isLoading }: Pa
         {/* Amount Paid */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Amount Paid (చెల్లించిన మొత్తం) <span className="text-red-500">*</span>
+            Amount Paid (à°šà±†à°²à±à°²à°¿à°‚à°šà°¿à°¨ à°®à±Šà°¤à±à°¤à°‚) <span className="text-red-500">*</span>
           </label>
           <input
             type="number"
@@ -83,14 +83,14 @@ export default function PaymentForm({ order, onSubmit, onCancel, isLoading }: Pa
             className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
           />
           {formData.paymentType !== 'Refund' && (
-            <p className="text-xs text-gray-500 mt-1">Remaining: ₹ {order.remainingAmount}</p>
+            <p className="text-xs text-gray-500 mt-1">Remaining: â‚¹ {order.remainingAmount}</p>
           )}
         </div>
 
         {/* Payment Type */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Payment Type (చెల్లింపు రకం) <span className="text-red-500">*</span>
+            Payment Type (à°šà±†à°²à±à°²à°¿à°‚à°ªà± à°°à°•à°‚) <span className="text-red-500">*</span>
           </label>
           <select
             name="paymentType"
@@ -108,7 +108,7 @@ export default function PaymentForm({ order, onSubmit, onCancel, isLoading }: Pa
         {/* Payment Method */}
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">
-            Payment Method (చెల్లింపు విధానం) <span className="text-red-500">*</span>
+            Payment Method (à°šà±†à°²à±à°²à°¿à°‚à°ªà± à°µà°¿à°§à°¾à°¨à°‚) <span className="text-red-500">*</span>
           </label>
           <select
             name="paymentMethod"
@@ -126,7 +126,7 @@ export default function PaymentForm({ order, onSubmit, onCancel, isLoading }: Pa
         {/* Payment Reference (Optional) */}
         <div className="space-y-1 md:col-span-2">
           <label className="block text-sm font-medium text-gray-700">
-            Payment Reference / Transaction ID (లావాదేవీ ఐడి)
+            Payment Reference / Transaction ID (à°²à°¾à°µà°¾à°¦à±‡à°µà±€ à°à°¡à°¿)
           </label>
           <input
             type="text"
@@ -141,7 +141,7 @@ export default function PaymentForm({ order, onSubmit, onCancel, isLoading }: Pa
         {/* Remarks */}
         <div className="space-y-1 md:col-span-2">
           <label className="block text-sm font-medium text-gray-700">
-            Remarks (గమనికలు)
+            Remarks (à°—à°®à°¨à°¿à°•à°²à±)
           </label>
           <textarea
             name="remarks"

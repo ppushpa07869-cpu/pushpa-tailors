@@ -544,6 +544,114 @@ export default function SimpleOrderForm({
       </div>
 
       {/* 5. Optional Design Remarks */}
+
+      {/* 5. Structured Measurements */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+        <h3 className="font-serif font-bold text-gray-900 text-base border-b pb-3">
+          📏 Measurements <span className="text-gray-400 font-normal text-sm">(Optional)</span>
+        </h3>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-semibold text-gray-700">
+            Measurement Type
+          </label>
+          <select
+            value={formData.measurementSnapshot?.measurementType || 'Standard'}
+            onChange={(e) =>
+              setFormData(prev => ({
+                ...prev,
+                measurementSnapshot: {
+                  ...prev.measurementSnapshot,
+                  measurementType: e.target.value,
+                },
+              }))
+            }
+            className={inputClass('measurementType')}
+          >
+            <option value="Standard">Standard</option>
+            <option value="Princess Cut">Princess Cut</option>
+            <option value="Boat Neck">Boat Neck</option>
+            <option value="High Neck">High Neck</option>
+            <option value="Deep Neck">Deep Neck</option>
+            <option value="Others">Others</option>
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {([
+            ['bust', 'Bust'],
+            ['waist', 'Waist'],
+            ['shoulder', 'Shoulder'],
+            ['frontNeck', 'Front Neck'],
+            ['backNeck', 'Back Neck'],
+            ['sleeveLength', 'Sleeve Length'],
+            ['sleeveRound', 'Sleeve Round'],
+            ['blouseLength', 'Blouse Length'],
+            ['armHole', 'Arm Hole'],
+            ['chestRound', 'Chest Round'],
+            ['margin', 'Margin'],
+          ] as const).map(([field, label]) => (
+            <div key={field} className="space-y-1.5">
+              <label className="block text-sm font-semibold text-gray-700">
+                {label}
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={formData.measurementSnapshot?.[field] ?? ''}
+                onChange={(e) =>
+                  setFormData(prev => {
+                    const measurements = {
+                      ...prev.measurementSnapshot,
+                      measurementType:
+                        prev.measurementSnapshot?.measurementType || 'Standard',
+                    };
+
+                    if (e.target.value.trim() === '') {
+                      delete measurements[field];
+                    } else {
+                      measurements[field] = Number(e.target.value);
+                    }
+
+                    return {
+                      ...prev,
+                      measurementSnapshot: measurements,
+                    };
+                  })
+                }
+                onKeyDown={handleKeyDown}
+                placeholder="Enter measurement"
+                className={inputClass(field)}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-semibold text-gray-700">
+            Measurement Notes
+          </label>
+          <textarea
+            rows={2}
+            value={formData.measurementSnapshot?.notes || ''}
+            onChange={(e) =>
+              setFormData(prev => ({
+                ...prev,
+                measurementSnapshot: {
+                  ...prev.measurementSnapshot,
+                  measurementType:
+                    prev.measurementSnapshot?.measurementType || 'Standard',
+                  notes: e.target.value,
+                },
+              }))
+            }
+            placeholder="Additional measurement instructions..."
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900 resize-none text-sm"
+          />
+        </div>
+      </div>
+
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-3">
         <h3 className="font-serif font-bold text-gray-900 text-base border-b pb-3">
           ✏️ Design Remarks <span className="text-gray-400 font-normal text-sm">(Optional)</span>

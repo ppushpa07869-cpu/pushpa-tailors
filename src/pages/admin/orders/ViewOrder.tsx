@@ -229,6 +229,66 @@ export default function ViewOrder() {
       </div>
 
       {/* Reference Photo & Remarks */}
+
+      {/* Structured Order Measurements */}
+      {order.measurementSnapshot && (
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+          <h3 className="font-semibold text-gray-900 mb-4">
+            📏 Order Measurements
+          </h3>
+
+          <p className="text-sm text-gray-600 mb-4">
+            Measurement Type:{' '}
+            <span className="font-semibold text-gray-900">
+              {order.measurementSnapshot.measurementType || 'Standard'}
+            </span>
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {([
+              ['bust', 'Bust'],
+              ['waist', 'Waist'],
+              ['shoulder', 'Shoulder'],
+              ['frontNeck', 'Front Neck'],
+              ['backNeck', 'Back Neck'],
+              ['sleeveLength', 'Sleeve Length'],
+              ['sleeveRound', 'Sleeve Round'],
+              ['blouseLength', 'Blouse Length'],
+              ['armHole', 'Arm Hole'],
+              ['chestRound', 'Chest Round'],
+              ['margin', 'Margin'],
+            ] as const).map(([field, label]) => {
+              const value = order.measurementSnapshot?.[field];
+
+              if (value === undefined || value === null) return null;
+
+              return (
+                <div
+                  key={field}
+                  className="bg-gray-50 rounded-xl p-3 border border-gray-100"
+                >
+                  <p className="text-xs text-gray-500">{label}</p>
+                  <p className="text-base font-semibold text-gray-900">
+                    {value}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          {order.measurementSnapshot.notes && (
+            <div className="mt-4 bg-gray-50 rounded-xl p-3">
+              <p className="text-xs text-gray-500 mb-1">
+                Measurement Notes
+              </p>
+              <p className="text-sm text-gray-800 whitespace-pre-wrap">
+                {order.measurementSnapshot.notes}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {(order.referencePhotoUrl || order.designRemarks) && (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
           <h3 className="font-semibold text-gray-900 mb-4">📸 Reference & Design</h3>

@@ -1,3 +1,4 @@
+
 import { Timestamp } from 'firebase/firestore';
 
 export const OrderTypes = [
@@ -13,14 +14,34 @@ export const OrderTypes = [
 
 export type OrderType = typeof OrderTypes[number];
 
-// Simplified 4-status workflow: Pending → In Progress → Ready → Delivered
-export type OrderStatus = 
+// Order status workflow
+export type OrderStatus =
   | 'Pending'
   | 'In Progress'
   | 'Ready'
   | 'Delivered';
 
-export type PaymentStatus = 'Unpaid' | 'Partially Paid' | 'Fully Paid';
+export type PaymentStatus =
+  | 'Unpaid'
+  | 'Partially Paid'
+  | 'Fully Paid';
+
+// Measurements saved as a snapshot on an individual order
+export interface OrderMeasurementSnapshot {
+  measurementType?: string;
+  bust?: number;
+  waist?: number;
+  shoulder?: number;
+  frontNeck?: number;
+  backNeck?: number;
+  sleeveLength?: number;
+  sleeveRound?: number;
+  blouseLength?: number;
+  armHole?: number;
+  chestRound?: number;
+  margin?: number;
+  notes?: string;
+}
 
 export interface Order {
   id: string;
@@ -28,19 +49,29 @@ export interface Order {
   customerId: string;
   customerName: string;
   mobileNumber: string;
+
   orderType?: OrderType | string;
   quantity?: number;
-  orderDate: string; // YYYY-MM-DD format
-  deliveryDate: string; // YYYY-MM-DD format — REQUIRED, always kept
+
+  orderDate: string;
+  deliveryDate: string;
+
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+
   advanceAmount: number;
   paidAmount: number;
   remainingAmount: number;
   totalAmount: number;
-  referencePhotoUrl?: string; // Optional reference/measurement photo
-  designRemarks?: string; // Optional design notes
+
+  referencePhotoUrl?: string;
+  designRemarks?: string;
+
+  // Measurements captured for this specific order
+  measurementSnapshot?: OrderMeasurementSnapshot;
+
   notes: string;
+
   createdAt: Timestamp | any;
   updatedAt: Timestamp | any;
 }
@@ -49,15 +80,23 @@ export interface OrderFormData {
   customerId?: string;
   customerName: string;
   mobileNumber: string;
+
   orderType: OrderType | string;
   quantity: number;
+
   orderDate: string;
   deliveryDate: string;
+
   status: OrderStatus;
+
   advanceAmount: number;
   totalAmount: number;
+
   referencePhotoUrl?: string;
   designRemarks?: string;
+
+  // Optional measurements submitted with the order
+  measurementSnapshot?: OrderMeasurementSnapshot;
+
   notes?: string;
 }
-

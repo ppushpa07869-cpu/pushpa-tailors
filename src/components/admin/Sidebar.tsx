@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Scissors, Users, BarChart2, Settings, Bell } from 'lucide-react';
+import { LayoutDashboard, LogOut, Scissors, Users, Palette, BarChart2, Settings, Bell } from 'lucide-react';
 import { auth } from '../../services/firebase';
 import { signOut } from 'firebase/auth';
 import NotificationCenter from './NotificationCenter';
@@ -56,6 +56,11 @@ export default function Sidebar({ notificationCount = 0 }: SidebarProps) {
             <NavLink to="/admin/customers" className={navLinkClass}>
               <Users className="h-5 w-5 flex-shrink-0" />
               <span className="font-medium tracking-wide">Customers</span>
+            </NavLink>
+
+            <NavLink to="/admin/designs" className={navLinkClass}>
+              <Palette className="h-5 w-5 flex-shrink-0" />
+              <span className="font-medium tracking-wide">Design Catalog</span>
             </NavLink>
 
             <NavLink to="/admin/reports" className={navLinkClass}>

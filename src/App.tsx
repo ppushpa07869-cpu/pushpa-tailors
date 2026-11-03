@@ -37,6 +37,9 @@ import OrderPayments from './pages/admin/payments/OrderPayments';
 // Reports
 import ReportsModule from './pages/admin/reports/ReportsModule';
 
+// Design Catalog
+import DesignCatalog from './pages/admin/designs/DesignCatalog';
+import DesignImport from './pages/admin/tools/DesignImport';
 function App() {
   return (
     <AuthProvider>
@@ -60,6 +63,10 @@ function App() {
               <Route path="orders/new" element={<AddOrder />} />
               <Route path="customers/edit/:id" element={<EditCustomer />} />
               <Route path="customers/:customerId" element={<CustomerDetail />} />
+
+              {/* Design Catalog */}
+              <Route path="designs" element={<DesignCatalog />} />
+              <Route path="design-import" element={<DesignImport />} />
 
               {/* Customer-scoped orders */}
               <Route path="customers/:customerId/orders/add" element={<AddOrder />} />
